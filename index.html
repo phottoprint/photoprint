@@ -8,7 +8,6 @@
         :root { --neon: #39ff14; --dark: #050505; --error: #ff0000; }
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: var(--dark); color: white; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Ajuste: Título e Subtítulo maiores */
         .header { margin-top: 30px; z-index: 10; }
         .brand-title { font-size: 45px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 6px; margin: 0; }
         .subtitle { color: white; font-size: 20px; letter-spacing: 3px; margin-top: 8px; opacity: 0.9; font-weight: 300; }
@@ -26,7 +25,6 @@
             100% { transform: scale(1); text-shadow: 0 0 0px var(--error); }
         }
 
-        /* Ajuste: Botão Olho maior e em 250px de altura */
         .main-ui { flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 250px; }
         .btn-eye { 
             width: 170px; height: 170px; border-radius: 50%; border: 6px solid #222; background: #000; 
@@ -41,14 +39,17 @@
             100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
         }
 
-        /* Interface Câmera */
         #cam-container { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
         video { width: 100%; height: 100%; object-fit: cover; }
         #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 20px; pointer-events: none; }
         #counter { font-size: 160px; font-weight: 900; color: var(--neon); text-shadow: 0 0 40px #000; display: flex; align-items: center; justify-content: center; flex-grow: 1; }
         
-        .back-circle { position: absolute; left: 30px; bottom: 45px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
-        .back-circle svg { width: 30px; height: 30px; fill: white; }
+        .btn-circle { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
+        .btn-circle svg { width: 30px; height: 30px; fill: white; }
+        
+        /* Botão Inverter (Posição Superior Direita na Câmera) */
+        #flip-btn { position: absolute; top: 40px; right: 20px; pointer-events: auto; }
+
         .shutter-btn { width: 90px; height: 90px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; pointer-events: auto; box-shadow: 0 0 20px var(--neon); animation: pulse-border 1.5s infinite; }
 
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 2000; }
@@ -67,9 +68,14 @@
         <video id="v" autoplay playsinline muted></video>
         <div id="overlay">
             <div id="indicator" style="font-size:18px; color:var(--neon); border:1px solid var(--neon); padding:5px 15px; border-radius:20px;">FOTO 1 / 1</div>
+            
+            <div id="flip-btn" class="btn-circle" onclick="switchCam()">
+                <svg viewBox="0 0 24 24"><path d="M7,15L11,19V16H14A5,5 0 0,1 19,21H21A7,7 0 0,0 14,14H11V11L7,15M17,9L13,5V8H10A5,5 0 0,0 5,3H3A7,7 0 0,1 10,10H13V13L17,9Z" /></svg>
+            </div>
+
             <div id="counter"></div>
-            <div id="cam-controls" style="display:flex; align-items:center; justify-content:center; width:100%; position:relative; min-height:120px;">
-                <div class="back-circle" onclick="voltarHome()"><svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg></div>
+            <div id="cam-controls" style="display:flex; align-items:center; justify-content:center; width:100%; position:relative; min-height:120px; gap:40px;">
+                <div class="btn-circle" onclick="voltarHome()"><svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg></div>
                 <div id="shutter-placeholder"></div>
             </div>
         </div>
@@ -93,7 +99,9 @@
 
     <script>
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-        let ev = ""; let frame = ""; let pics = []; let total = 1; let stream = null; let cancelado = false;
+        let ev = ""; let frame = ""; let pics = []; let total = 1; let stream = null; 
+        let cancelado = false;
+        let currentFacingMode = "environment"; // Inicia com a traseira
 
         async function sync() {
             try {
@@ -110,12 +118,12 @@
                     ev = d.evento;
                     document.getElementById('nome-evento').innerText = ev;
                     const upperEv = ev.toUpperCase();
-                    if (upperEv.includes("TIRINHA")) {
-                        total = 3;
-                        document.getElementById('formato-view').innerText = "MODO: TIRINHA";
-                    } else if (upperEv.includes("POLAROID")) {
+                    if (upperEv.includes("POLAROID")) {
                         total = 1;
                         document.getElementById('formato-view').innerText = "MODO: POLAROID";
+                    } else if (upperEv.includes("TIRINHA")) {
+                        total = 3;
+                        document.getElementById('formato-view').innerText = "MODO: TIRINHA";
                     } else {
                         total = 1;
                         document.getElementById('formato-view').innerText = "MODO: 10X15";
@@ -137,12 +145,29 @@
         async function ligar() {
             try {
                 pics = []; cancelado = false;
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } } });
-                document.getElementById('v').srcObject = stream;
+                await startStream(currentFacingMode);
                 document.getElementById('cam-container').style.display = "block";
                 document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
                 document.getElementById('counter').innerText = "";
-            } catch (err) { alert("Permita o acesso à câmera."); }
+            } catch (err) { alert("Erro de acesso à câmera."); }
+        }
+
+        async function startStream(mode) {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            const constraints = { 
+                video: { 
+                    facingMode: mode, 
+                    width: { ideal: 4096 },
+                    height: { ideal: 2160 }
+                } 
+            };
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            document.getElementById('v').srcObject = stream;
+        }
+
+        async function switchCam() {
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            await startStream(currentFacingMode);
         }
 
         function voltarHome() {
@@ -153,6 +178,7 @@
 
         async function iniciarSequencia() {
             document.getElementById('shutter-placeholder').innerHTML = ""; 
+            document.getElementById('flip-btn').style.display = "none"; // Esconde o botão de inverter ao começar
             go(1);
         }
 
@@ -179,11 +205,19 @@
             f.style.display = "block"; setTimeout(() => f.style.display = "none", 100);
             const v = document.getElementById('v');
             const cv = document.getElementById('c-snap');
-            cv.width = v.videoWidth; cv.height = v.videoHeight;
+            cv.width = v.videoWidth; 
+            cv.height = v.videoHeight;
             const ctx = cv.getContext('2d');
+            
+            // Inverte a foto horizontalmente se for a câmera frontal (user)
+            if (currentFacingMode === "user") {
+                ctx.translate(cv.width, 0);
+                ctx.scale(-1, 1);
+            }
+            
             ctx.drawImage(v, 0, 0);
             const img = new Image();
-            img.src = cv.toDataURL('image/jpeg', 0.9);
+            img.src = cv.toDataURL('image/jpeg', 1.0);
             pics.push(img);
         }
 
@@ -212,7 +246,7 @@
                     }
                 });
                 ctx.drawImage(m, 0, 0);
-                const previewUrl = cv.toDataURL('image/jpeg', 0.8);
+                const previewUrl = cv.toDataURL('image/jpeg', 0.9);
                 document.getElementById('loader').innerHTML = `
                     <img src="${previewUrl}" style="height:60vh; border:3px solid white;">
                     <div style="display:flex; gap:15px; margin-top:15px;">
@@ -233,7 +267,7 @@
                 fd.append('evento', ev);
                 await fetch(`${API}/upload`, { method: 'POST', body: fd });
                 location.reload();
-            }, 'image/jpeg', 0.9);
+            }, 'image/jpeg', 0.95);
         }
 
         setInterval(sync, 3000);
