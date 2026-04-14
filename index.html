@@ -81,7 +81,7 @@
                 ev = d.evento;
                 document.getElementById('nome-evento').innerText = ev;
                 total = ev.toUpperCase().includes("TIRINHA") ? 3 : 1;
-                document.getElementById('formato-view').innerText = `MODO: ${total > 1 ? 'TIRINHA AUTO' : 'FOTO ÚNICA'}`;
+                document.getElementById('formato-view').innerText = `MODO: ${total > 1 ? 'TIRINHA' : '10X15'}`;
                 getFrame(ev);
             }
         } catch (e) {}
@@ -97,44 +97,47 @@
     async function ligar() {
         try {
             pics = [];
-            // SUGESTÃO ADICIONADA: Configuração robusta para câmera frontal no celular
+            // AJUSTE 1: Câmera Traseira (environment)
             stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: "user", // Força câmera de selfie
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                } 
+                video: { facingMode: "environment", width: { ideal: 1280 } } 
             });
             
             document.getElementById('v').srcObject = stream;
+            document.getElementById('v').style.transform = "scaleX(1)"; // Remove o espelhamento para câmera traseira
             document.getElementById('cam-container').style.display = "block";
             
-            // Pequeno delay de 1s para o usuário se ver na tela antes da contagem
-            setTimeout(() => go(1), 1000);
+            // AJUSTE 2: Não começa sozinho. Mostra o botão de acionamento.
+            document.getElementById('counter').innerHTML = '<button onclick="iniciarSequencia()" style="font-size:30px; padding:20px; border-radius:50px; border:none; background:var(--neon); font-weight:bold;">TIRAR FOTO</button>';
             
         } catch (err) {
-            console.error(err);
-            alert("ERRO: Verifique se o cadeado lá no topo do navegador está com a CÂMERA ATIVADA.");
+            alert("Erro ao acessar câmera traseira. Verifique as permissões.");
         }
+    }
+
+    async function iniciarSequencia() {
+        go(1); // Começa a contagem da primeira foto
     }
 
     async function go(n) {
         const cDisplay = document.getElementById('counter');
         document.getElementById('indicator').innerText = `FOTO ${n} / ${total}`;
         
+        // AJUSTE 3: Contagem Regressiva Visual
         for (let i = 3; i > 0; i--) {
             cDisplay.innerText = i;
             await new Promise(r => setTimeout(r, 1000));
         }
         
-        cDisplay.innerText = "";
+        cDisplay.innerText = "SMILE! 📸";
         snap();
+        await new Promise(r => setTimeout(r, 500)); // Delay do flash
 
         if (n < total) {
-            // Espera 2 segundos entre as fotos para dar tempo de mudar a pose
+            cDisplay.innerText = "PREPARE A PRÓXIMA...";
             setTimeout(() => go(n + 1), 2000);
         } else {
-            setTimeout(send, 1000);
+            cDisplay.innerText = "MONTANDO...";
+            setTimeout(processarMontagem, 1000);
         }
     }
 
@@ -146,9 +149,7 @@
         const cv = document.getElementById('c-snap');
         cv.width = v.videoWidth; cv.height = v.videoHeight;
         const ctx = cv.getContext('2d');
-        
-        // Espelhamento corrigido para a foto não sair invertida
-        ctx.translate(cv.width, 0); ctx.scale(-1, 1);
+        // Sem espelhamento para câmera traseira
         ctx.drawImage(v, 0, 0);
         
         const img = new Image();
@@ -156,7 +157,7 @@
         pics.push(img);
     }
 
-    async function send() {
+    async function processarMontagem() {
         if (stream) stream.getTracks().forEach(t => t.stop());
         document.getElementById('cam-container').style.display = "none";
         document.getElementById('loader').style.display = "flex";
@@ -165,26 +166,44 @@
         const ctx = cv.getContext('2d');
         const m = new Image();
         m.crossOrigin = "anonymous";
+        
         m.onload = () => {
             cv.width = m.width; cv.height = m.height;
-            const h = cv.height / total;
+            const hPart = cv.height / total;
+
             pics.forEach((img, i) => {
-                const s = Math.max(cv.width / img.width, h / img.height);
+                const s = Math.max(cv.width / img.width, hPart / img.height);
                 ctx.save();
-                ctx.beginPath(); ctx.rect(0, i * h, cv.width, h); ctx.clip();
-                ctx.drawImage(img, (cv.width - img.width * s) / 2, (i * h) + (h - img.height * s) / 2, img.width * s, img.height * s);
+                ctx.beginPath(); ctx.rect(0, i * hPart, cv.width, hPart); ctx.clip();
+                ctx.drawImage(img, (cv.width - img.width * s) / 2, (i * hPart) + (hPart - img.height * s) / 2, img.width * s, img.height * s);
                 ctx.restore();
             });
+            
             ctx.drawImage(m, 0, 0);
-            cv.toBlob(async b => {
-                const fd = new FormData();
-                fd.append('file', b, 'f.jpg');
-                fd.append('evento', ev);
-                await fetch(`${API}/upload`, { method: 'POST', body: fd });
-                location.reload();
-            }, 'image/jpeg', 0.9);
+            
+            // AJUSTE 4: Mostrar Preview para o Cliente
+            const previewUrl = cv.toDataURL('image/jpeg', 0.8);
+            document.getElementById('loader').innerHTML = `
+                <img src="${previewUrl}" style="width:70%; border:5px solid white; box-shadow:0 0 20px #000;">
+                <p style="color:var(--neon); font-weight:bold; margin-top:15px;">FICOU BOM?</p>
+                <button onclick="enviarBlob()" style="padding:15px 30px; background:var(--neon); font-weight:bold; border-radius:10px;">IMPRIMIR AGORA</button>
+                <button onclick="location.reload()" style="background:none; color:white; border:none; margin-top:10px;">Tirar outra</button>
+            `;
         };
         m.src = frame + "?t=" + Date.now();
+    }
+
+    function enviarBlob() {
+        document.getElementById('loader').innerHTML = '<div class="spin"></div><p>ENVIANDO...</p>';
+        const cv = document.getElementById('c-strip');
+        cv.toBlob(async b => {
+            const fd = new FormData();
+            fd.append('file', b, 'f.jpg');
+            fd.append('evento', ev);
+            await fetch(`${API}/upload`, { method: 'POST', body: fd });
+            alert("ENVIADO COM SUCESSO!");
+            location.reload();
+        }, 'image/jpeg', 0.9);
     }
 
     setInterval(sync, 5000);
