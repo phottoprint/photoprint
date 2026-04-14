@@ -15,15 +15,15 @@
 
         .mirror { transform: scaleX(-1); }
 
-        /* Alerta de Rotação */
-        #rotate-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: none; align-items: center; justify-content: center; flex-direction: column; }
-        .phone-icon { width: 80px; height: 140px; border: 4px solid white; border-radius: 10px; position: relative; animation: rotatePhone 2s infinite ease-in-out; }
-        .phone-icon::after { content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; }
+        /* Alerta de Rotação - Só para 10x15 */
+        #rotate-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; align-items: center; justify-content: center; flex-direction: column; }
+        .phone-icon { width: 60px; height: 110px; border: 4px solid white; border-radius: 8px; position: relative; animation: rotatePhone 2s infinite ease-in-out; }
+        .phone-icon::after { content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; border: 2px solid white; border-radius: 50%; }
         @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(-90deg); } }
-        .rotate-txt { color: var(--neon); font-weight: 900; margin-top: 30px; letter-spacing: 2px; }
+        .rotate-txt { color: var(--neon); font-weight: 900; margin-top: 25px; letter-spacing: 1px; font-size: 14px; }
 
         #offline-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; }
-        .mantencao-txt { color: var(--error); font-size: 28px; font-weight: 900; letter-spacing: 2px; animation: pulse-red 0.8s infinite; text-align: center; padding: 20px; }
+        .mantencao-txt { color: var(--error); font-size: 28px; font-weight: 900; text-align: center; }
         
         .main-ui { flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 250px; }
         .btn-eye { width: 170px; height: 170px; border-radius: 50%; border: 6px solid #222; background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; animation: pulse-border 2s infinite; }
@@ -48,7 +48,7 @@
 <body>
 
     <div id="offline-screen"><div class="mantencao-txt">SISTEMA EM MANUTENÇÃO</div></div>
-    <div id="rotate-overlay"><div class="phone-icon"></div><div class="rotate-txt">GIRE O CELULAR (DEITADO)</div></div>
+    <div id="rotate-overlay"><div class="phone-icon"></div><div class="rotate-txt">MODO 10X15: GIRE O CELULAR</div></div>
     <div id="flash"></div>
     <div id="loader"><div class="spin"></div><p style="color:var(--neon);margin-top:20px;font-weight:900;">PROCESSANDO...</p></div>
 
@@ -82,10 +82,9 @@
         let cancelado = false; let currentFacingMode = "environment"; 
         
         const FORMATOS = {
-            // Padding: 40px para "encolher" a foto dentro da moldura
-            "TIRINHA": { w: 600, h: 1800, fotos: 3, landscape: false, padding: 45 },
-            "POLAROID": { w: 1200, h: 1500, fotos: 1, landscape: false, padding: 80 },
-            "10X15": { w: 1800, h: 1200, fotos: 1, landscape: true, padding: 0 }
+            "TIRINHA": { w: 600, h: 1800, fotos: 3, landscape: false, pad: 60 },
+            "POLAROID": { w: 1200, h: 1500, fotos: 1, landscape: false, pad: 120 },
+            "10X15": { w: 1800, h: 1200, fotos: 1, landscape: true, pad: 0 }
         };
         
         let configAtual = FORMATOS["10X15"];
@@ -111,9 +110,13 @@
         }
 
         function checkOrientation() {
-            if (!configAtual.landscape) { document.getElementById('rotate-overlay').style.display = "none"; return; }
-            if (window.innerWidth < window.innerHeight) document.getElementById('rotate-overlay').style.display = "flex";
-            else document.getElementById('rotate-overlay').style.display = "none";
+            // SÓ bloqueia se o formato EXIGIR landscape
+            const overlay = document.getElementById('rotate-overlay');
+            if (configAtual.landscape && window.innerWidth < window.innerHeight) {
+                overlay.style.display = "flex";
+            } else {
+                overlay.style.display = "none";
+            }
         }
         window.addEventListener('resize', checkOrientation);
 
@@ -203,28 +206,27 @@
             m.onload = () => {
                 cv.width = configAtual.w; cv.height = configAtual.h;
                 const hPart = cv.height / total;
-                const pad = configAtual.padding; // Margem interna para a foto respirar
+                const pad = configAtual.pad;
 
                 pics.forEach((img, i) => {
-                    // Calcula a área disponível com o desconto do padding
-                    const targetW = cv.width - (pad * 2);
-                    const targetH = hPart - (pad * 2);
+                    // Área segura com padding
+                    const safeW = cv.width - (pad * 2);
+                    const safeH = hPart - (pad * 2);
 
-                    const s = Math.max(targetW / img.width, targetH / img.height);
-                    const drawW = img.width * s;
-                    const drawH = img.height * s;
+                    // Lógica de escala 'contain' para não cortar cabeças
+                    const scale = Math.min(safeW / img.width, safeH / img.height);
+                    const drawW = img.width * scale;
+                    const drawH = img.height * scale;
                     
                     const offsetX = (cv.width - drawW) / 2;
                     const offsetY = (i * hPart) + (hPart - drawH) / 2;
 
                     ctx.save();
-                    // Clip para garantir que a foto não vaze para outra área
-                    ctx.beginPath(); ctx.rect(0, i * hPart, cv.width, hPart); ctx.clip();
+                    // Fundo branco ou transparente atrás da foto se necessário
                     ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
                     ctx.restore();
                 });
                 
-                // Moldura por cima
                 ctx.drawImage(m, 0, 0, cv.width, cv.height);
 
                 const previewUrl = cv.toDataURL('image/jpeg', 0.8);
