@@ -109,13 +109,13 @@
                 
                 const f = String(d.formato || d.layout || "").toUpperCase().trim();
                 
-                if (ev !== d.evento || (f && !configAtual.hasOwnProperty(f))) {
+                if (ev !== d.evento || (f && f !== configAtual.key)) {
                     ev = d.evento;
                     document.getElementById('nome-evento').innerText = ev;
                     
-                    if (f.includes("POLAROID")) configAtual = FORMATOS["POLAROID"];
-                    else if (f.includes("TIRINHA")) configAtual = FORMATOS["TIRINHA"];
-                    else configAtual = FORMATOS["10X15"];
+                    if (f.includes("POLAROID")) configAtual = {...FORMATOS["POLAROID"], key: "POLAROID"};
+                    else if (f.includes("TIRINHA")) configAtual = {...FORMATOS["TIRINHA"], key: "TIRINHA"};
+                    else configAtual = {...FORMATOS["10X15"], key: "10X15"};
 
                     total = configAtual.fotos;
                     getFrame(ev);
@@ -214,18 +214,28 @@
             m.onload = () => {
                 cv.width = configAtual.w; cv.height = configAtual.h;
                 const hPart = cv.height / total;
+                
                 pics.forEach((img, i) => {
+                    // CÁLCULO DE ESCALA "COVER" PARA 10X15
                     const s = Math.max(cv.width / img.width, hPart / img.height);
                     const drawW = img.width * s;
                     const drawH = img.height * s;
+                    
+                    // Centraliza a foto no espaço destinado
                     const offsetX = (cv.width - drawW) / 2;
                     const offsetY = (i * hPart) + (hPart - drawH) / 2;
+
                     ctx.save();
-                    ctx.beginPath(); ctx.rect(0, i * hPart, cv.width, hPart); ctx.clip();
+                    ctx.beginPath(); 
+                    ctx.rect(0, i * hPart, cv.width, hPart); 
+                    ctx.clip();
                     ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
                     ctx.restore();
                 });
+
+                // Moldura sempre por cima de tudo
                 ctx.drawImage(m, 0, 0, cv.width, cv.height);
+
                 const previewUrl = cv.toDataURL('image/jpeg', 0.8);
                 document.getElementById('loader').innerHTML = `
                     <img src="${previewUrl}" style="max-height:60vh; border:3px solid white;">
