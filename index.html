@@ -8,53 +8,46 @@
         :root { --neon: #39ff14; --dark: #050505; --error: #ff0000; }
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: var(--dark); color: white; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Header */
-        .header { margin-top: 20px; z-index: 10; }
-        .brand-title { font-size: 32px; font-weight: 900; color: var(--neon); text-shadow: 0 0 10px var(--neon); letter-spacing: 5px; margin: 0; }
-        .subtitle { color: white; font-size: 14px; letter-spacing: 2px; margin-top: 5px; opacity: 0.8; }
+        /* 2. Ajuste: Título e Subtítulo maiores */
+        .header { margin-top: 30px; z-index: 10; }
+        .brand-title { font-size: 42px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 6px; margin: 0; }
+        .subtitle { color: white; font-size: 18px; letter-spacing: 3px; margin-top: 8px; opacity: 0.9; font-weight: 300; }
         
-        .info-container { margin-top: 40px; }
-        #nome-evento { font-size: 22px; font-weight: bold; color: var(--neon); text-transform: uppercase; margin: 5px 0; min-height: 25px; }
-        #formato-view { font-size: 12px; color: var(--neon); border: 1px solid var(--neon); padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; }
+        .info-container { margin-top: 50px; }
+        #nome-evento { font-size: 24px; font-weight: bold; color: var(--neon); text-transform: uppercase; margin: 5px 0; min-height: 25px; }
+        #formato-view { font-size: 14px; color: var(--neon); border: 2px solid var(--neon); padding: 6px 20px; border-radius: 20px; display: inline-block; font-weight: bold; background: rgba(57, 255, 20, 0.1); }
 
-        /* BLOQUEIO DE MANUTENÇÃO */
+        /* Bloqueio de Manutenção */
         #offline-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; }
         .mantencao-txt { color: var(--error); font-size: 26px; font-weight: 900; letter-spacing: 2px; animation: pulse-red 0.8s infinite; text-align: center; padding: 20px; }
         
-        @keyframes pulse-red {
-            0% { transform: scale(1); text-shadow: 0 0 0px var(--error); }
-            50% { transform: scale(1.05); text-shadow: 0 0 20px var(--error); }
-            100% { transform: scale(1); text-shadow: 0 0 0px var(--error); }
+        /* 1. Ajuste: Botão Olho maior e em 250px de altura */
+        .main-ui { flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 250px; }
+        .btn-eye { 
+            width: 160px; height: 160px; border-radius: 50%; border: 5px solid #222; background: #000; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 0 rgba(57, 255, 20, 0.7); animation: pulse-border 2s infinite;
+        }
+        .iris { width: 55px; height: 55px; border-radius: 50%; border: 4px solid var(--neon); box-shadow: 0 0 20px var(--neon); }
+        
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
+            70% { box-shadow: 0 0 0 25px rgba(57, 255, 20, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
         }
 
-        /* Interface da Câmera */
+        /* Interface Câmera */
         #cam-container { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
         video { width: 100%; height: 100%; object-fit: cover; }
         #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 20px; pointer-events: none; }
         #counter { font-size: 150px; font-weight: 900; color: var(--neon); text-shadow: 0 0 40px #000; display: flex; align-items: center; justify-content: center; flex-grow: 1; }
-
-        /* AJUSTE: Botão Olho Subiu + 1.5cm */
-        .main-ui { flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 280px; }
-        .btn-eye { 
-            width: 130px; height: 130px; border-radius: 50%; border: 4px solid #222; background: #000; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 0 rgba(57, 255, 20, 0.7); animation: pulse-border 2s infinite;
-        }
-        .iris { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--neon); box-shadow: 0 0 15px var(--neon); }
-        
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(57, 255, 20, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
-        }
-
-        .back-circle { position: absolute; left: 30px; bottom: 45px; width: 50px; height: 50px; background: rgba(255,255,255,0.1); border: 1px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
-        .back-circle svg { width: 24px; height: 24px; fill: white; }
-        .shutter-btn { width: 80px; height: 80px; background: black; border-radius: 50%; border: 4px solid var(--neon); cursor: pointer; pointer-events: auto; box-shadow: 0 0 15px var(--neon); animation: pulse-border 1.5s infinite; }
+        .back-circle { position: absolute; left: 30px; bottom: 45px; width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 1px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
+        .back-circle svg { width: 28px; height: 28px; fill: white; }
+        .shutter-btn { width: 85px; height: 85px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; pointer-events: auto; box-shadow: 0 0 20px var(--neon); animation: pulse-border 1.5s infinite; }
 
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 2000; }
         #loader { display: none; position: fixed; inset: 0; background: var(--dark); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .spin { width: 50px; height: 50px; border: 5px solid #222; border-top-color: var(--neon); border-radius: 50%; animation: s 1s linear infinite; }
+        .spin { width: 60px; height: 60px; border: 6px solid #222; border-top-color: var(--neon); border-radius: 50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
     </style>
 </head>
@@ -62,15 +55,10 @@
 
     <div id="offline-screen">
         <div class="mantencao-txt">SISTEMA EM MANUTENÇÃO</div>
-        <p style="color:white; opacity:0.5; margin-top:10px; font-size: 12px;">Conexão interrompida com o painel central.</p>
     </div>
 
     <div id="flash"></div>
-
-    <div id="loader">
-        <div class="spin"></div>
-        <p id="loader-text" style="color: var(--neon); margin-top: 20px; font-weight: 900;">PROCESSANDO...</p>
-    </div>
+    <div id="loader"><div class="spin"></div><p style="color:var(--neon);margin-top:20px;font-weight:900;">PROCESSANDO...</p></div>
 
     <div id="cam-container">
         <video id="v" autoplay playsinline muted></video>
@@ -78,9 +66,7 @@
             <div id="indicator" style="font-size:18px; color:var(--neon); border:1px solid var(--neon); padding:5px 15px; border-radius:20px;">FOTO 1 / 1</div>
             <div id="counter"></div>
             <div id="cam-controls" style="display:flex; align-items:center; justify-content:center; width:100%; position:relative; min-height:100px;">
-                <div class="back-circle" onclick="voltarHome()">
-                    <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
-                </div>
+                <div class="back-circle" onclick="voltarHome()"><svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg></div>
                 <div id="shutter-placeholder"></div>
             </div>
         </div>
@@ -90,15 +76,13 @@
         <h1 class="brand-title">PHOTO PRINT</h1>
         <div class="subtitle">colecionando momentos</div>
         <div class="info-container">
-            <div id="nome-evento">Carregando...</div>
+            <div id="nome-evento">Sincronizando...</div>
             <div id="formato-view">---</div>
         </div>
     </div>
 
     <div class="main-ui">
-        <div class="btn-eye" onclick="ligar()">
-            <div class="iris"></div>
-        </div>
+        <div class="btn-eye" onclick="ligar()"><div class="iris"></div></div>
     </div>
 
     <canvas id="c-snap" style="display:none"></canvas>
@@ -106,17 +90,14 @@
 
     <script>
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-        let ev = ""; let frame = ""; let pics = []; let total = 1; let stream = null;
-        let cancelado = false; // "Freio de mão" para as fotos
+        let ev = ""; let frame = ""; let pics = []; let total = 1; let stream = null; let cancelado = false;
 
         async function sync() {
             try {
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
-                if(!r.ok) throw new Error();
                 const d = await r.json();
                 
-                // AJUSTE OFFLINE: Se o painel disser OFFLINE ou erro
-                if (d.status === "OFFLINE" || !d.evento) {
+                if (d.status === "OFFLINE") {
                     document.getElementById('offline-screen').style.display = "flex";
                 } else {
                     document.getElementById('offline-screen').style.display = "none";
@@ -125,13 +106,22 @@
                 if (ev !== d.evento) {
                     ev = d.evento;
                     document.getElementById('nome-evento').innerText = ev;
-                    total = ev.toUpperCase().includes("TIRINHA") ? 3 : 1;
-                    document.getElementById('formato-view').innerText = `MODO: ${total > 1 ? 'TIRINHA' : '10X15'}`;
+                    
+                    // LÓGICA DE FORMATO: Tirinha vs Polaroid vs 10x15
+                    const upperEv = ev.toUpperCase();
+                    if (upperEv.includes("TIRINHA")) {
+                        total = 3;
+                        document.getElementById('formato-view').innerText = "MODO: TIRINHA";
+                    } else if (upperEv.includes("POLAROID")) {
+                        total = 1;
+                        document.getElementById('formato-view').innerText = "MODO: POLAROID";
+                    } else {
+                        total = 1;
+                        document.getElementById('formato-view').innerText = "MODO: 10X15";
+                    }
                     getFrame(ev);
                 }
-            } catch (e) {
-                document.getElementById('offline-screen').style.display = "flex";
-            }
+            } catch (e) { document.getElementById('offline-screen').style.display = "flex"; }
         }
 
         async function getFrame(e) {
@@ -145,23 +135,19 @@
 
         async function ligar() {
             try {
-                pics = [];
-                cancelado = false; // Reseta o estado
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment", width: { ideal: 1280 } } 
-                });
+                pics = []; cancelado = false;
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } } });
                 document.getElementById('v').srcObject = stream;
                 document.getElementById('cam-container').style.display = "block";
                 document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
                 document.getElementById('counter').innerText = "";
-            } catch (err) { alert("Permita o acesso à câmera."); }
+            } catch (err) { alert("Erro de câmera."); }
         }
 
         function voltarHome() {
-            cancelado = true; // Ativa o freio de mão imediatamente
+            cancelado = true;
             if (stream) stream.getTracks().forEach(t => t.stop());
             document.getElementById('cam-container').style.display = "none";
-            document.getElementById('counter').innerText = "";
         }
 
         async function iniciarSequencia() {
@@ -170,27 +156,20 @@
         }
 
         async function go(n) {
-            if (cancelado) return; // Se clicou em voltar, mata a função aqui
-
+            if (cancelado) return;
             const cDisplay = document.getElementById('counter');
             document.getElementById('indicator').innerText = `FOTO ${n} / ${total}`;
-            
             let tempo = (total > 1 && n === 1) ? 7 : 5;
             for (let i = tempo; i > 0; i--) {
-                if (cancelado) return; // Checa cancelamento a cada segundo
+                if (cancelado) return;
                 cDisplay.innerText = i;
                 await new Promise(r => setTimeout(r, 1000));
             }
-            
             if (cancelado) return;
             cDisplay.innerText = "";
             snap();
-            
-            if (n < total) {
-                setTimeout(() => { if(!cancelado) go(n + 1); }, 1500);
-            } else {
-                setTimeout(() => { if(!cancelado) processarMontagem(); }, 1000);
-            }
+            if (n < total) { setTimeout(() => { if(!cancelado) go(n + 1); }, 1500); } 
+            else { setTimeout(() => { if(!cancelado) processarMontagem(); }, 1000); }
         }
 
         function snap() {
