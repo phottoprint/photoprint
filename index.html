@@ -16,6 +16,9 @@
         #nome-evento { font-size: 26px; font-weight: bold; color: var(--neon); text-transform: uppercase; margin: 5px 0; min-height: 25px; }
         #formato-view { font-size: 15px; color: var(--neon); border: 2px solid var(--neon); padding: 8px 25px; border-radius: 20px; display: inline-block; font-weight: bold; background: rgba(57, 255, 20, 0.1); }
 
+        /* Estilo para espelhar ou não o vídeo */
+        .mirror { transform: scaleX(-1); }
+
         #offline-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; }
         .mantencao-txt { color: var(--error); font-size: 28px; font-weight: 900; letter-spacing: 2px; animation: pulse-red 0.8s infinite; text-align: center; padding: 20px; }
         
@@ -26,11 +29,7 @@
         }
 
         .main-ui { flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 250px; }
-        .btn-eye { 
-            width: 170px; height: 170px; border-radius: 50%; border: 6px solid #222; background: #000; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 0 rgba(57, 255, 20, 0.7); animation: pulse-border 2s infinite;
-        }
+        .btn-eye { width: 170px; height: 170px; border-radius: 50%; border: 6px solid #222; background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 rgba(57, 255, 20, 0.7); animation: pulse-border 2s infinite; }
         .iris { width: 60px; height: 60px; border-radius: 50%; border: 5px solid var(--neon); box-shadow: 0 0 20px var(--neon); }
         
         @keyframes pulse-border {
@@ -95,14 +94,13 @@
         let cancelado = false;
         let currentFacingMode = "environment"; 
         
-        // MEDIDAS EXATAS QUE VOCÊ QUER
         const FORMATOS = {
-            TIRINHA: { w: 600, h: 1800, fotos: 3, label: "MODO: TIRINHA (5X15)" },
-            POLAROID: { w: 1200, h: 1500, fotos: 1, label: "MODO: POLAROID" },
-            PADRAO: { w: 1800, h: 1200, fotos: 1, label: "MODO: 10X15" }
+            "TIRINHA": { w: 600, h: 1800, fotos: 3, label: "MODO: TIRINHA (5X15)" },
+            "POLAROID": { w: 1200, h: 1500, fotos: 1, label: "MODO: POLAROID" },
+            "10X15": { w: 1800, h: 1200, fotos: 1, label: "MODO: 10X15" }
         };
         
-        let configAtual = FORMATOS.PADRAO;
+        let configAtual = FORMATOS["10X15"];
 
         async function sync() {
             try {
@@ -115,19 +113,16 @@
                     document.getElementById('offline-screen').style.display = "none";
                 }
                 
-                if (ev !== d.evento) {
+                // Pega o formato vindo do painel (d.formato ou similar)
+                // Se seu painel enviar d.formato = "POLAROID", ele vai ativar sozinho agora.
+                const formatoRecebido = (d.formato || d.layout || "10X15").toUpperCase();
+
+                if (ev !== d.evento || configAtual.label.indexOf(formatoRecebido) === -1) {
                     ev = d.evento;
                     document.getElementById('nome-evento').innerText = ev;
-                    const nomeUpper = ev.toUpperCase();
-
-                    // LÓGICA DE DETECÇÃO CORRIGIDA (Polaroid em primeiro!)
-                    if (nomeUpper.includes("POLAROID")) {
-                        configAtual = FORMATOS.POLAROID;
-                    } else if (nomeUpper.includes("TIRINHA")) {
-                        configAtual = FORMATOS.TIRINHA;
-                    } else {
-                        configAtual = FORMATOS.PADRAO;
-                    }
+                    
+                    // Se o formato recebido existir no nosso mapa, aplica. Se não, usa 10x15.
+                    configAtual = FORMATOS[formatoRecebido] || FORMATOS["10X15"];
 
                     total = configAtual.fotos;
                     document.getElementById('formato-view').innerText = configAtual.label;
@@ -150,17 +145,24 @@
             stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: mode, width: { ideal: 1920 } } 
             });
-            document.getElementById('v').srcObject = stream;
+            const v = document.getElementById('v');
+            v.srcObject = stream;
+            
+            // CORREÇÃO DE ESPELHAMENTO:
+            // Se for frontal (user), espelhamos a pré-visualização para o usuário.
+            if (mode === "user") {
+                v.classList.add('mirror');
+            } else {
+                v.classList.remove('mirror');
+            }
         }
 
         async function ligar() {
-            try {
-                pics = []; cancelado = false;
-                await startStream(currentFacingMode);
-                document.getElementById('cam-container').style.display = "block";
-                document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
-                document.getElementById('counter').innerText = "";
-            } catch (err) { alert("Câmera não permitida."); }
+            pics = []; cancelado = false;
+            await startStream(currentFacingMode);
+            document.getElementById('cam-container').style.display = "block";
+            document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
+            document.getElementById('counter').innerText = "";
         }
 
         async function switchCam() {
@@ -204,9 +206,13 @@
             const cv = document.getElementById('c-snap');
             cv.width = v.videoWidth; cv.height = v.videoHeight;
             const ctx = cv.getContext('2d');
+            
+            // No snap, se for frontal, invertemos o desenho para que a foto final fique "correta" (não espelhada)
             if (currentFacingMode === "user") {
-                ctx.translate(cv.width, 0); ctx.scale(-1, 1);
+                ctx.translate(cv.width, 0);
+                ctx.scale(-1, 1);
             }
+            
             ctx.drawImage(v, 0, 0);
             const img = new Image();
             img.src = cv.toDataURL('image/jpeg', 0.95);
@@ -224,7 +230,6 @@
             const m = new Image();
             m.crossOrigin = "anonymous";
             m.onload = () => {
-                // AQUI ELE APLICA AS MEDIDAS QUE VOCÊ PASSOU
                 cv.width = configAtual.w; 
                 cv.height = configAtual.h;
 
