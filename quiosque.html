@@ -191,6 +191,7 @@
             letter-spacing: 5px; border-left: 12px solid var(--neon);
         }
 
+        /* TELA MOBILE CORRIGIDA */
         #mobile-download-screen {
             display: none; position: fixed; inset: 0;
             background: radial-gradient(circle at 50% 50%, #1a3a12 0%, #000 100%);
@@ -201,7 +202,9 @@
             background: var(--neon); color: #000; padding: 22px 60px; border-radius: 4px;
             text-decoration: none; font-weight: 900; font-size: 1.2rem; margin-top: 30px;
             box-shadow: 0 0 25px var(--neon); text-transform: uppercase; letter-spacing: 2px;
+            border: none; cursor: pointer;
         }
+        .btn-baixar:disabled { background: #333; color: #666; box-shadow: none; cursor: wait; }
 
         @keyframes pulse-blink { 0%, 100% { opacity: 1; text-shadow: 0 0 10px var(--neon); } 50% { opacity: 0.6; text-shadow: 0 0 25px var(--neon); } }
 
@@ -216,10 +219,12 @@
 <body onclick="resetInactivityTimer()" ontouchstart="resetInactivityTimer()">
 
 <div id="mobile-download-screen">
-    <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 3px; font-weight: bold; margin-bottom: 5px;">TRANSFERÊNCIA CONCLUÍDA</div>
-    <h2 style="color: var(--neon); letter-spacing: 4px; margin: 0 0 25px; font-size: 1.8rem; text-transform: uppercase;">Acesso Concedido</h2>
+    <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 3px; font-weight: bold; margin-bottom: 5px;">SISTEMA PRONTO</div>
+    <h2 style="color: var(--neon); letter-spacing: 4px; margin: 0 0 25px; font-size: 1.8rem; text-transform: uppercase;">Baixar Foto</h2>
     <img id="mobile-img" src="" style="max-width: 100%; max-height: 55vh; border-radius: 8px; border: 1px solid var(--border);">
-    <a id="mobile-link" href="" download="foto_photocloud.jpg" class="btn-baixar">⬇️ Confirmar Download</a>
+    
+    <button id="btn-forcar-download" class="btn-baixar">⬇️ Confirmar Download</button>
+    <p id="msg-status" style="font-size: 10px; color: #444; margin-top: 15px;"></p>
 </div>
 
 <div id="conteudo-quiosque">
@@ -246,7 +251,6 @@
 
     <div id="numpad-overlay">
         <div class="numpad-content">
-            <div style="font-size: 11px; color: var(--neon); letter-spacing: 4px; margin-bottom: 10px; font-weight: bold; text-transform: uppercase;">Input Terminal</div>
             <input type="text" id="input-busca" placeholder="---" readonly>
             <div class="numpad-grid">
                 <button class="num-btn" onclick="addNum(1)">1</button>
@@ -286,49 +290,84 @@
     let todasFotos = [];
     let inactivityTimer;
     let ssInterval;
-    let ssIndex = 0;
     let qr = new QRCode(document.getElementById("qrcode"), { 
         width: 190, height: 190, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
     });
 
     window.onload = () => {
         const params = new URLSearchParams(window.location.search);
-        const fotoParaDownload = params.get('dl');
-        if (fotoParaDownload) {
+        const fotoUrl = params.get('dl');
+        
+        if (fotoUrl) {
             document.getElementById('conteudo-quiosque').style.display = 'none';
             document.getElementById('mobile-download-screen').style.display = 'flex';
-            document.getElementById('mobile-img').src = decodeURIComponent(fotoParaDownload);
-            document.getElementById('mobile-link').href = decodeURIComponent(fotoParaDownload);
+            document.getElementById('mobile-img').src = decodeURIComponent(fotoUrl);
+            
+            // CONFIGURA O BOTÃO DE DOWNLOAD FORÇADO
+            document.getElementById('btn-forcar-download').onclick = () => forcarDownload(decodeURIComponent(fotoUrl));
         } else {
             syncDados();
             resetInactivityTimer();
         }
     };
 
+    // FUNÇÃO QUE RESOLVE O PROBLEMA DO DOWNLOAD NO CELULAR
+    async function forcarDownload(url) {
+        const btn = document.getElementById('btn-forcar-download');
+        const status = document.getElementById('msg-status');
+        
+        try {
+            btn.disabled = true;
+            btn.innerText = "Processando...";
+            status.innerText = "Preparando arquivo para o sistema...";
+
+            // 1. Busca os dados da imagem (Fetch)
+            const response = await fetch(url);
+            const blob = await response.blob();
+            
+            // 2. Cria um link temporário interno
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = "foto_photocloud_" + Date.now() + ".jpg";
+            
+            // 3. Simula o clique
+            document.body.appendChild(link);
+            link.click();
+            
+            // 4. Limpa a memória
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            btn.disabled = false;
+            btn.innerText = "⬇️ Confirmar Download";
+            status.innerText = "Download concluído!";
+        } catch (e) {
+            console.error(e);
+            btn.disabled = false;
+            btn.innerText = "Erro ao baixar";
+            status.innerText = "Tente segurar na imagem e 'Salvar Foto'";
+        }
+    }
+
     async function syncDados() {
         try {
             const resStatus = await fetch(`${API_URL}/status?t=${Date.now()}`);
             const config = await resStatus.json();
-            
             if (config.evento !== eventoAtivo) {
                 eventoAtivo = config.evento;
                 document.getElementById('ev-titulo').innerText = eventoAtivo ? eventoAtivo.toUpperCase() : "RAIZ";
             }
-
             let urlBusca = `${API_URL}/list-photos?t=${Date.now()}`;
-            if (eventoAtivo) {
-                urlBusca += `&evento=${encodeURIComponent(eventoAtivo)}`;
-            }
-
+            if (eventoAtivo) urlBusca += `&evento=${encodeURIComponent(eventoAtivo)}`;
             const resFila = await fetch(urlBusca);
             const fotos = await resFila.json();
             const fotosInvertidas = fotos.reverse();
-
             if (JSON.stringify(fotosInvertidas) !== JSON.stringify(todasFotos)) {
                 todasFotos = fotosInvertidas;
                 renderizarGaleria();
             }
-        } catch (e) { console.error("Erro na sincronização:", e); }
+        } catch (e) { console.error(e); }
     }
 
     function renderizarGaleria() {
@@ -336,7 +375,6 @@
         const termo = document.getElementById('input-busca').value;
         const fotosComId = todasFotos.map((f, i) => ({ ...f, displayId: todasFotos.length - i }));
         const filtradas = termo === "" ? fotosComId : fotosComId.filter(f => f.displayId.toString().includes(termo));
-        
         container.innerHTML = filtradas.map(f => {
             const urlImg = `${API_URL}/photo/${encodeURIComponent(f.key)}`;
             return `<div class="foto-item" onclick="abrirModal('${urlImg}', '${f.displayId}')">
@@ -348,24 +386,21 @@
 
     function resetInactivityTimer() {
         clearTimeout(inactivityTimer);
-        inactivityTimer = setTimeout(startScreensaver, 60000);
-    }
-
-    function startScreensaver() {
-        if (todasFotos.length === 0 || document.getElementById('modal').style.display === 'flex') return;
-        document.getElementById('screensaver').style.display = 'block';
-        runSlideshow();
-        clearInterval(ssInterval);
-        ssInterval = setInterval(runSlideshow, 5000);
+        inactivityTimer = setTimeout(() => {
+            if (todasFotos.length > 0 && document.getElementById('modal').style.display !== 'flex') {
+                document.getElementById('screensaver').style.display = 'block';
+                runSlideshow();
+                clearInterval(ssInterval);
+                ssInterval = setInterval(runSlideshow, 5000);
+            }
+        }, 60000);
     }
 
     function runSlideshow() {
         if (todasFotos.length === 0) return;
         const img = document.getElementById('ss-img');
-        if (ssIndex >= todasFotos.length) ssIndex = 0;
-        const f = todasFotos[ssIndex];
+        const f = todasFotos[Math.floor(Math.random() * todasFotos.length)];
         img.src = `${API_URL}/photo/${encodeURIComponent(f.key)}`;
-        ssIndex = (ssIndex + 1) % todasFotos.length;
     }
 
     function stopScreensaver() {
@@ -392,14 +427,13 @@
 
     function buscarEAbrirFoto() {
         const termo = document.getElementById('input-busca').value;
-        if (termo === "") { toggleNumpad(false); return; }
         const fotosComId = todasFotos.map((f, i) => ({ ...f, displayId: todasFotos.length - i }));
         const achada = fotosComId.find(f => f.displayId.toString() === termo);
         if (achada) {
             toggleNumpad(false);
             abrirModal(`${API_URL}/photo/${encodeURIComponent(achada.key)}`, achada.displayId);
         } else {
-            alert("ID FOTO NÃO ENCONTRADO");
+            alert("NÃO ENCONTRADA");
             limparBusca();
         }
     }
@@ -408,11 +442,8 @@
         stopScreensaver();
         document.getElementById('full-photo').src = url;
         document.getElementById('photo-id-label').innerText = "#" + id;
-
-        // CORREÇÃO: Força o link absoluto para o celular reconhecer como URL
         const linkParaOCliente = new URL(window.location.href);
         linkParaOCliente.searchParams.set('dl', url);
-
         qr.clear();
         qr.makeCode(linkParaOCliente.toString()); 
         document.getElementById('modal').style.display = 'flex';
