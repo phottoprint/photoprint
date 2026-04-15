@@ -82,9 +82,9 @@
         let cancelado = false; let currentFacingMode = "environment"; 
         
         const FORMATOS = {
-            "TIRINHA": { w: 600, h: 1800, fotos: 3, landscape: false, pad: 60 },
-            "POLAROID": { w: 1200, h: 1500, fotos: 1, landscape: false, pad: 120 },
-            "10X15": { w: 1800, h: 1200, fotos: 1, landscape: true, pad: 0 }
+            "TIRINHA": { w: 600, h: 1800, fotos: 3, landscape: false, padX: 30, padY: 40, divider: true },
+            "POLAROID": { w: 1200, h: 1500, fotos: 1, landscape: false, padX: 80, padY: 100, divider: false },
+            "10X15": { w: 1800, h: 1200, fotos: 1, landscape: true, padX: 0, padY: 0, divider: false }
         };
         
         let configAtual = FORMATOS["10X15"];
@@ -110,7 +110,6 @@
         }
 
         function checkOrientation() {
-            // SÓ bloqueia se o formato EXIGIR landscape
             const overlay = document.getElementById('rotate-overlay');
             if (configAtual.landscape && window.innerWidth < window.innerHeight) {
                 overlay.style.display = "flex";
@@ -206,27 +205,39 @@
             m.onload = () => {
                 cv.width = configAtual.w; cv.height = configAtual.h;
                 const hPart = cv.height / total;
-                const pad = configAtual.pad;
+                
+                // Limpa o canvas
+                ctx.fillStyle = "white";
+                ctx.fillRect(0,0, cv.width, cv.height);
 
                 pics.forEach((img, i) => {
-                    // Área segura com padding
-                    const safeW = cv.width - (pad * 2);
-                    const safeH = hPart - (pad * 2);
+                    const drawAreaW = cv.width - (configAtual.padX * 2);
+                    const drawAreaH = hPart - (configAtual.padY * 2);
 
-                    // Lógica de escala 'contain' para não cortar cabeças
-                    const scale = Math.min(safeW / img.width, safeH / img.height);
-                    const drawW = img.width * scale;
-                    const drawH = img.height * scale;
+                    // Escala Cover para preencher a largura/altura definida
+                    const s = Math.max(drawAreaW / img.width, drawAreaH / img.height);
+                    const w = img.width * s;
+                    const h = img.height * s;
                     
-                    const offsetX = (cv.width - drawW) / 2;
-                    const offsetY = (i * hPart) + (hPart - drawH) / 2;
+                    const x = (cv.width - w) / 2;
+                    const y = (i * hPart) + (hPart - h) / 2;
 
                     ctx.save();
-                    // Fundo branco ou transparente atrás da foto se necessário
-                    ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+                    // Clip para não invadir outras fotos
+                    ctx.beginPath();
+                    ctx.rect(configAtual.padX, (i * hPart) + configAtual.padY, drawAreaW, drawAreaH);
+                    ctx.clip();
+                    ctx.drawImage(img, x, y, w, h);
                     ctx.restore();
+
+                    // Adiciona linha separadora branca se for Tirinha (exceto na última foto)
+                    if (configAtual.divider && i < total - 1) {
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(0, (i + 1) * hPart - 2, cv.width, 4);
+                    }
                 });
                 
+                // Aplica a moldura por cima de tudo
                 ctx.drawImage(m, 0, 0, cv.width, cv.height);
 
                 const previewUrl = cv.toDataURL('image/jpeg', 0.8);
