@@ -2,21 +2,92 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>HUB - PHOTO PRINT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASTER HUB | PHOTO PRINT</title>
     <style>
-        body { background: #000; color: #39ff14; font-family: sans-serif; text-align: center; padding: 50px; }
-        .btn { 
-            display: block; width: 250px; margin: 20px auto; padding: 20px;
-            border: 2px solid #39ff14; color: #39ff14; text-decoration: none;
-            font-weight: bold; border-radius: 10px; transition: 0.3s;
+        :root {
+            --bg: #050505;
+            --accent: #39ff14;
+            --surface: #121212;
+            --neon-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
         }
-        .btn:hover { background: #39ff14; color: #000; }
+        body { 
+            background: var(--bg); 
+            color: #fff; 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+        }
+        h1 { 
+            color: var(--accent); 
+            text-shadow: var(--neon-shadow); 
+            letter-spacing: 3px; 
+            margin-bottom: 30px;
+            font-size: 2rem;
+            text-align: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .btn { 
+            background: var(--surface);
+            border: 1px solid #333;
+            color: #fff; 
+            padding: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 12px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        .btn:hover { 
+            border-color: var(--accent); 
+            box-shadow: var(--neon-shadow);
+            transform: translateY(-3px);
+            color: var(--accent);
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 0.8rem;
+            opacity: 0.5;
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5rem; }
+            .btn { padding: 15px; font-size: 0.9rem; }
+        }
     </style>
 </head>
 <body>
-    <h1>CONTROLE DO SISTEMA</h1>
-    <a href="index.html" class="btn" target="_blank">📱 ABRIR CELULAR (INDEX)</a>
-    <a href="galeria.html" class="btn" target="_blank">🖼️ ABRIR GALERIA CLIENTE</a>
-    <p style="color: #666; font-size: 12px;">Dica: No PC, clique com o scroll do mouse para abrir todos em abas novas.</p>
+
+    <h1>PHOTO PRINT MASTER</h1>
+
+    <div class="container">
+        <a href="index.html" class="btn" target="_blank">📸 Index (Celular)</a>
+        <a href="painel.html" class="btn" target="_blank">⚙️ Painel Controle</a>
+        
+        <a href="quiosque.html" class="btn" target="_blank">🔍 Quiosque Busca</a>
+        <a href="galeria.html" class="btn" target="_blank">🖼️ Galeria Cliente</a>
+        
+        <a href="telão.html" class="btn" target="_blank">🖥️ Telão Slideshow</a>
+    </div>
+
+    <div class="footer">
+        SISTEMA COMPLETO ONLINE - 2026
+    </div>
+
 </body>
 </html>
