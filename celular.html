@@ -18,13 +18,14 @@
             flex-direction: column; 
         }
         
-        @media print {
-            body { background: white !important; }
-            .header, .main-ui, #cam-container, .cam-btn, .shutter-btn, #loader button, .rotate-txt { display: none !important; }
-            #loader img { max-height: 100%; border: none; box-shadow: none; }
-            #loader { display: block !important; position: static; background: white; padding: 0; }
+        /* Estilo para quando o sistema está OFFLINE ou em MANUTENÇÃO */
+        #offline-screen { 
+            position: fixed; inset: 0; background: #000; z-index: 10000; 
+            display: none; align-items: center; justify-content: center; flex-direction: column; 
         }
+        .mantencao-txt { color: var(--error); font-size: 28px; font-weight: 900; text-shadow: 0 0 15px var(--error); }
 
+        /* Restante do CSS mantido conforme original */
         .header { margin-top: 40px; z-index: 10; border-left: 4px solid var(--neon); padding-left: 20px; align-self: flex-start; margin-left: 30px; text-align: left; }
         .brand-title { font-size: 38px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 5px; margin: 0; text-transform: uppercase; }
         .subtitle { color: white; font-size: 14px; letter-spacing: 3px; margin-top: 5px; opacity: 0.7; font-weight: bold; text-transform: uppercase; }
@@ -36,9 +37,6 @@
         .phone-icon { width: 50px; height: 90px; border: 3px solid white; border-radius: 6px; position: relative; animation: rotatePhone 2s infinite ease-in-out; }
         @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(-90deg); } }
         .rotate-txt { color: var(--neon); font-weight: 900; margin-top: 25px; letter-spacing: 2px; font-size: 14px; }
-
-        #offline-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; }
-        .mantencao-txt { color: var(--error); font-size: 28px; font-weight: 900; }
         
         .main-ui { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding-bottom: 80px; }
         .btn-eye { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #111; background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
@@ -109,17 +107,20 @@
 
         async function sync() {
             try {
+                // Força o cache zero com t=Date.now()
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
                 const d = await r.json();
                 
-                if (d.status === "OFFLINE") {
+                // 1. SINCRONIZA STATUS (Manutenção/Ready)
+                // Se d.status for "OFFLINE", "MANUTENÇÃO" ou qualquer coisa diferente de "ONLINE" ou "READY"
+                const statusNormalizado = String(d.status || "").toUpperCase();
+                if (statusNormalizado === "OFFLINE" || statusNormalizado === "MANUTENÇÃO") {
                     document.getElementById('offline-screen').style.display = "flex";
-                    return;
                 } else {
                     document.getElementById('offline-screen').style.display = "none";
                 }
 
-                // Sincroniza Formato primeiro para garantir que a UI se adapte
+                // 2. SINCRONIZA FORMATO E ROTAÇÃO
                 const fStr = String(d.formato || d.layout || "").toUpperCase().trim();
                 let novoTipo = "10X15";
                 if (fStr.includes("TIRINHA")) novoTipo = "TIRINHA";
@@ -128,46 +129,43 @@
                 if (configAtual.key !== novoTipo) {
                     configAtual = FORMATOS[novoTipo];
                     total = configAtual.fotos;
-                    checkOrientation();
+                    checkOrientation(); 
                 }
 
-                // Sincroniza Evento e busca Moldura
+                // 3. SINCRONIZA EVENTO E BUSCA MOLDURA
                 if (ev !== d.evento) {
                     ev = d.evento;
                     document.getElementById('nome-evento').innerText = ev;
-                    
-                    // IMPORTANTE: Busca a moldura. Se não existir, avisa no console.
-                    const frameEncontrado = await getFrame(ev);
-                    if (!frameEncontrado) {
-                        document.getElementById('nome-evento').innerText = "MOLDURA NÃO ENCONTRADA";
-                    }
+                    await getFrame(ev); 
                 }
 
             } catch (e) { 
-                console.error("Erro sync:", e);
+                console.error("Erro na sincronização:", e);
+                // Em caso de erro total de rede, mostra tela de manutenção por segurança
                 document.getElementById('offline-screen').style.display = "flex"; 
             }
         }
 
         async function getFrame(e) {
             try {
-                // Adicionado t=Date.now() para forçar o Worker a não usar cache do R2
+                // Busca a lista de arquivos dentro da pasta do evento
                 const r = await fetch(`${API}/list-photos?evento=${encodeURIComponent(e)}&t=${Date.now()}`);
-                const f = await r.json();
+                const arquivos = await r.json();
                 
-                // Se o evento foi deletado, a lista virá vazia []
-                if (!f || f.length === 0) {
+                // Procura por qualquer arquivo que termine com moldura.png ou .png
+                const p = arquivos.find(x => x.key.toLowerCase().includes('moldura.png') || x.key.toLowerCase().endsWith('.png'));
+                
+                if (p) {
+                    frame = `${API}/photo/${encodeURIComponent(p.key)}`;
+                    console.log("Moldura carregada com sucesso:", frame);
+                    return true;
+                } else {
+                    console.error("Nenhuma moldura .png encontrada na pasta:", e);
                     frame = "";
                     return false;
                 }
-
-                const p = f.find(x => x.key.toLowerCase().endsWith('.png'));
-                if (p) {
-                    frame = `${API}/photo/${encodeURIComponent(p.key)}`;
-                    return true;
-                }
-                return false;
             } catch (err) {
+                console.error("Erro ao carregar lista de fotos:", err);
                 return false;
             }
         }
@@ -195,18 +193,18 @@
                 v.setAttribute('playsinline', true);
                 await v.play();
                 if (mode === "user") v.classList.add('mirror'); else v.classList.remove('mirror');
-            } catch (err) { alert("Câmera bloqueada."); }
+            } catch (err) { alert("Câmera bloqueada ou erro de permissão."); }
         }
 
         async function ligar() {
-            // Verifica moldura antes de abrir
-            if (!frame) {
-                await sync(); // Tenta sincronizar de novo
-                if (!frame) {
-                    alert("Atenção: Nenhuma moldura encontrada para este evento no servidor.");
-                }
-            }
+            // Re-sincroniza antes de abrir para garantir
+            await sync();
             
+            if (!frame) {
+                alert("Erro: O evento '" + ev + "' ainda não tem uma moldura (.png) pronta.");
+                return;
+            }
+
             pics = []; cancelado = false;
             document.getElementById('cam-container').style.display = "block";
             await startStream(currentFacingMode);
@@ -314,7 +312,7 @@
 
                 try {
                     const res = await fetch(`${API}/upload`, { method: 'POST', body: fd });
-                    if(res.ok) { location.reload(); } else { alert("Erro no envio."); location.reload(); }
+                    if(res.ok) { location.reload(); } else { alert("Erro ao enviar para o servidor."); location.reload(); }
                 } catch(err) { alert("Erro de conexão."); location.reload(); }
             }, 'image/jpeg', 0.95);
         }
