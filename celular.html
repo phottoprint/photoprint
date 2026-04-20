@@ -19,6 +19,7 @@
         }
         .mantencao-txt { color: var(--error); font-size: 28px; font-weight: 900; text-shadow: 0 0 15px var(--error); }
 
+        /* Capa Inicial */
         .header { margin-top: 40px; z-index: 10; border-left: 4px solid var(--neon); padding-left: 20px; align-self: flex-start; margin-left: 30px; text-align: left; }
         .brand-title { font-size: 38px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 5px; margin: 0; text-transform: uppercase; }
         .subtitle { color: white; font-size: 14px; letter-spacing: 3px; margin-top: 5px; opacity: 0.7; font-weight: bold; text-transform: uppercase; }
@@ -26,8 +27,6 @@
 
         .mirror { transform: scaleX(-1); }
         #rotate-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; align-items: center; justify-content: center; flex-direction: column; }
-        .phone-icon { width: 50px; height: 90px; border: 3px solid white; border-radius: 6px; position: relative; animation: rotatePhone 2s infinite ease-in-out; }
-        @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(-90deg); } }
         
         .main-ui { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding-bottom: 80px; }
         .btn-eye { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #111; background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
@@ -35,16 +34,49 @@
         
         #cam-container { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
         video { width: 100%; height: 100%; object-fit: cover; }
-        #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 20px; pointer-events: none; }
         
-        /* Onde aparece NOME | FORMATO */
-        #info-topo { font-size: 14px; font-weight: 900; color: var(--neon); border: 1px solid var(--neon); padding: 8px 25px; border-radius: 30px; background: rgba(0,0,0,0.7); text-transform: uppercase; letter-spacing: 1px; }
+        /* Layout do Topo na Câmera */
+        #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; pointer-events: none; }
         
-        #counter { font-size: 160px; font-weight: 900; color: var(--neon); text-shadow: 0 0 40px #000; flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #sub-counter { font-size: 24px; margin-top: -20px; opacity: 0.8; }
+        .topo-grupo { 
+            background: rgba(0,0,0,0.8); 
+            border: 1px solid var(--neon); 
+            padding: 15px 30px; 
+            border-radius: 15px; 
+            width: 80%; 
+            max-width: 400px;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
 
-        .cam-btn { width: 65px; height: 65px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
-        .shutter-btn { width: 90px; height: 90px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; pointer-events: auto; box-shadow: 0 0 25px var(--neon); }
+        #info-topo { font-size: 16px; font-weight: 900; color: var(--neon); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        
+        /* CONTADOR GIGANTE ABAIXO DO NOME */
+        #num-count { 
+            font-size: 80px; 
+            font-weight: 900; 
+            color: white; 
+            line-height: 1;
+            display: block;
+            text-shadow: 0 0 20px var(--neon);
+        }
+        #sub-count { 
+            font-size: 12px; 
+            font-weight: bold; 
+            color: var(--neon); 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            opacity: 0.9;
+        }
+
+        /* Controles Inferiores */
+        #cam-controls { 
+            position: absolute; bottom: 40px; left: 0; right: 0;
+            display: flex; align-items: center; justify-content: space-evenly; 
+            width: 100%; pointer-events: auto; 
+        }
+        .cam-btn { width: 65px; height: 65px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .shutter-btn { width: 90px; height: 90px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; box-shadow: 0 0 25px var(--neon); }
 
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 2000; }
         #loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
@@ -56,19 +88,20 @@
 <body>
 
     <div id="offline-screen"><div class="mantencao-txt">SISTEMA EM MANUTENÇÃO</div></div>
-    <div id="rotate-overlay"><div class="phone-icon"></div><p style="color:var(--neon);margin-top:20px;font-weight:900;">GIRE O CELULAR</p></div>
+    <div id="rotate-overlay"><p style="color:var(--neon);font-weight:900;">GIRE O CELULAR</p></div>
     <div id="flash"></div>
     <div id="loader"><div class="spin"></div><p style="color:var(--neon);margin-top:20px;font-weight:bold;">PROCESSANDO...</p></div>
 
     <div id="cam-container">
         <video id="v" autoplay playsinline muted></video>
         <div id="overlay">
-            <div id="info-topo">CARREGANDO...</div>
-            <div id="counter">
+            <div class="topo-grupo">
+                <div id="info-topo">SINCRONIZANDO...</div>
                 <span id="num-count"></span>
-                <span id="sub-count"></span>
+                <span id="sub-count">AGUARDANDO START</span>
             </div>
-            <div id="cam-controls" style="display:flex; align-items:center; justify-content:space-evenly; width:100%; padding-bottom:30px; pointer-events: auto;">
+
+            <div id="cam-controls">
                 <div class="cam-btn" onclick="voltarHome()">
                     <svg viewBox="0 0 24 24" width="30" fill="var(--neon)"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
                 </div>
@@ -83,7 +116,7 @@
     <div class="header">
         <h1 class="brand-title">Photo Print</h1>
         <div class="subtitle">colecionando momentos</div>
-        <div id="nome-evento-capa">Sincronizando...</div>
+        <div id="nome-evento-capa">...</div>
     </div>
 
     <div class="main-ui">
@@ -109,18 +142,14 @@
             try {
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
                 const d = await r.json();
-                
-                // Status Online/Offline
                 const statusVal = String(d.status || "").toUpperCase();
                 document.getElementById('offline-screen').style.display = (statusVal === "OFFLINE") ? "flex" : "none";
 
-                // Nome do Evento e Formato
                 ev = d.evento || "Geral";
                 formatStr = d.formato || "10X15 Standard";
                 document.getElementById('nome-evento-capa').innerText = ev;
                 document.getElementById('info-topo').innerText = `${ev} | ${formatStr}`;
 
-                // Configura Layout
                 let tipo = "10X15";
                 if (formatStr.toUpperCase().includes("TIRINHA")) tipo = "TIRINHA";
                 else if (formatStr.toUpperCase().includes("POLAROID")) tipo = "POLAROID";
@@ -130,11 +159,8 @@
                     total = configAtual.fotos;
                     checkOrientation();
                 }
-
-                // Busca Moldura se mudar o evento
                 await getFrame(ev);
-
-            } catch (e) { console.error("Erro sync:", e); }
+            } catch (e) { console.error(e); }
         }
 
         async function getFrame(nomeEvento) {
@@ -155,9 +181,7 @@
 
         async function switchCam() {
             currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
-            if (stream) {
-                await startStream(currentFacingMode);
-            }
+            await startStream(currentFacingMode);
         }
 
         async function startStream(mode) {
@@ -169,15 +193,16 @@
                 const v = document.getElementById('v');
                 v.srcObject = stream;
                 if (mode === "user") v.classList.add('mirror'); else v.classList.remove('mirror');
-            } catch (e) { alert("Erro ao acessar câmera."); }
+            } catch (e) { console.error(e); }
         }
 
         async function ligar() {
             await sync();
-            if (!frame) { alert("Moldura não encontrada para este evento!"); return; }
-            
+            if (!frame) { alert("Moldura não encontrada!"); return; }
             document.getElementById('cam-container').style.display = "block";
             await startStream(currentFacingMode);
+            document.getElementById('num-count').innerText = "";
+            document.getElementById('sub-count').innerText = "CLIQUE NO BOTÃO PARA INICIAR";
             document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
             checkOrientation();
         }
@@ -191,12 +216,12 @@
             document.getElementById('shutter-placeholder').innerHTML = "";
             pics = [];
             for(let n=1; n<=total; n++) {
-                document.getElementById('sub-count').innerText = `FOTO ${n} DE ${total}`;
+                document.getElementById('sub-count').innerText = `PREPARE-SE: FOTO ${n} DE ${total}`;
                 for(let i=5; i>0; i--) {
                     document.getElementById('num-count').innerText = i;
                     await new Promise(r => setTimeout(r, 1000));
                 }
-                document.getElementById('num-count').innerText = "";
+                document.getElementById('num-count').innerText = "SORRIA!";
                 snap();
                 await new Promise(r => setTimeout(r, 1000));
             }
@@ -251,7 +276,7 @@
         }
 
         window.addEventListener('resize', checkOrientation);
-        setInterval(sync, 5000);
+        setInterval(sync, 10000);
         sync();
     </script>
 </body>
