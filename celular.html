@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOTO PRINT - FULL AUTO</title>
+    <title>PHOTO PRINT - MOBILE</title>
     <style>
         :root { --neon: #39ff14; --error: #ff0000; }
         body { 
@@ -22,7 +22,7 @@
         .header { margin-top: 40px; z-index: 10; border-left: 4px solid var(--neon); padding-left: 20px; align-self: flex-start; margin-left: 30px; text-align: left; }
         .brand-title { font-size: 38px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 5px; margin: 0; text-transform: uppercase; }
         .subtitle { color: white; font-size: 14px; letter-spacing: 3px; margin-top: 5px; opacity: 0.7; font-weight: bold; text-transform: uppercase; }
-        #nome-evento { font-size: 22px; font-weight: bold; color: var(--neon); text-transform: uppercase; margin: 20px 0; min-height: 25px; }
+        #nome-evento-capa { font-size: 22px; font-weight: bold; color: var(--neon); text-transform: uppercase; margin: 20px 0; min-height: 25px; }
 
         .mirror { transform: scaleX(-1); }
         #rotate-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; align-items: center; justify-content: center; flex-direction: column; }
@@ -32,14 +32,18 @@
         .main-ui { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding-bottom: 80px; }
         .btn-eye { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #111; background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
         .iris { width: 70px; height: 70px; border-radius: 50%; border: 5px solid var(--neon); box-shadow: 0 0 25px var(--neon), inset 0 0 15px var(--neon); animation: pulse-eye 2s infinite; }
-        @keyframes pulse-eye { 0% { transform: scale(1); } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); } }
         
         #cam-container { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
         video { width: 100%; height: 100%; object-fit: cover; }
         #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 20px; pointer-events: none; }
-        #counter { font-size: 160px; font-weight: 900; color: var(--neon); text-shadow: 0 0 40px #000; flex-grow: 1; display: flex; align-items: center; }
         
-        .cam-btn { width: 60px; height: 60px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
+        /* Onde aparece NOME | FORMATO */
+        #info-topo { font-size: 14px; font-weight: 900; color: var(--neon); border: 1px solid var(--neon); padding: 8px 25px; border-radius: 30px; background: rgba(0,0,0,0.7); text-transform: uppercase; letter-spacing: 1px; }
+        
+        #counter { font-size: 160px; font-weight: 900; color: var(--neon); text-shadow: 0 0 40px #000; flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #sub-counter { font-size: 24px; margin-top: -20px; opacity: 0.8; }
+
+        .cam-btn { width: 65px; height: 65px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
         .shutter-btn { width: 90px; height: 90px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; pointer-events: auto; box-shadow: 0 0 25px var(--neon); }
 
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 2000; }
@@ -52,19 +56,26 @@
 <body>
 
     <div id="offline-screen"><div class="mantencao-txt">SISTEMA EM MANUTENÇÃO</div></div>
-    <div id="rotate-overlay"><div class="phone-icon"></div><p style="color:var(--neon);margin-top:20px;">GIRE O CELULAR</p></div>
+    <div id="rotate-overlay"><div class="phone-icon"></div><p style="color:var(--neon);margin-top:20px;font-weight:900;">GIRE O CELULAR</p></div>
     <div id="flash"></div>
-    <div id="loader"><div class="spin"></div><p style="color:var(--neon);margin-top:20px;">PROCESSANDO...</p></div>
+    <div id="loader"><div class="spin"></div><p style="color:var(--neon);margin-top:20px;font-weight:bold;">PROCESSANDO...</p></div>
 
     <div id="cam-container">
         <video id="v" autoplay playsinline muted></video>
         <div id="overlay">
-            <div id="indicator" style="font-size:16px; color:var(--neon); border:1px solid var(--neon); padding:8px 20px; border-radius:20px; background:rgba(0,0,0,0.5);">FOTO 1</div>
-            <div id="counter"></div>
+            <div id="info-topo">CARREGANDO...</div>
+            <div id="counter">
+                <span id="num-count"></span>
+                <span id="sub-count"></span>
+            </div>
             <div id="cam-controls" style="display:flex; align-items:center; justify-content:space-evenly; width:100%; padding-bottom:30px; pointer-events: auto;">
-                <div class="cam-btn" onclick="voltarHome()"><svg viewBox="0 0 24 24" width="30" fill="var(--neon)"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg></div>
+                <div class="cam-btn" onclick="voltarHome()">
+                    <svg viewBox="0 0 24 24" width="30" fill="var(--neon)"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+                </div>
                 <div id="shutter-placeholder"></div>
-                <div class="cam-btn" onclick="switchCam()"><svg viewBox="0 0 24 24" width="30" fill="var(--neon)"><path d="M7,15L11,19V16H14A5,5 0 0,1 19,21H21A7,7 0 0,0 14,14H11V11L7,15M17,9L13,5V8H10A5,5 0 0,0 5,3H3A7,7 0 0,1 10,10H13V13L17,9Z" /></svg></div>
+                <div class="cam-btn" onclick="switchCam()">
+                    <svg viewBox="0 0 24 24" width="32" fill="var(--neon)"><path d="M15.5,14L20.5,19L19.08,20.42L14.08,15.42L15.5,14M3,3.27L4.27,2L22,19.73L20.73,21L18.11,18.39C17.09,19.38 15.62,20 14,20H10V17H14C14.7,17 15.35,16.79 15.9,16.42L12,12.52V15L7,10L8.1,8.9L3,3.27M17,10V7H13V10.18L11,8.18V5H17V2L22,7L17,12V10Z" /></svg>
+                </div>
             </div>
         </div>
     </div>
@@ -72,7 +83,7 @@
     <div class="header">
         <h1 class="brand-title">Photo Print</h1>
         <div class="subtitle">colecionando momentos</div>
-        <div id="nome-evento">Sincronizando...</div>
+        <div id="nome-evento-capa">Sincronizando...</div>
     </div>
 
     <div class="main-ui">
@@ -84,8 +95,8 @@
 
     <script>
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-        let ev = ""; let frame = ""; let pics = []; let total = 1; let stream = null; 
-        let cancelado = false; let currentFacingMode = "user"; 
+        let ev = ""; let formatStr = ""; let frame = ""; let pics = []; let total = 1; 
+        let stream = null; let currentFacingMode = "user"; 
         
         const FORMATOS = {
             "TIRINHA": { w: 600, h: 1800, fotos: 3, landscape: false, key: "TIRINHA" },
@@ -99,37 +110,29 @@
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
                 const d = await r.json();
                 
-                // --- DEBUG: Veja no console do navegador o que o Worker está mandando ---
-                console.log("Dados recebidos do Worker:", d);
+                // Status Online/Offline
+                const statusVal = String(d.status || "").toUpperCase();
+                document.getElementById('offline-screen').style.display = (statusVal === "OFFLINE") ? "flex" : "none";
 
-                // 1. SINCRONIZA STATUS (Testa múltiplos nomes de campos possíveis)
-                const statusVal = (d.status || d.ativo || d.situacao || "").toUpperCase();
-                if (statusVal === "OFFLINE" || statusVal === "MANUTENÇÃO" || statusVal === "0" || statusVal === "FALSE") {
-                    document.getElementById('offline-screen').style.display = "flex";
-                } else {
-                    document.getElementById('offline-screen').style.display = "none";
-                }
+                // Nome do Evento e Formato
+                ev = d.evento || "Geral";
+                formatStr = d.formato || "10X15 Standard";
+                document.getElementById('nome-evento-capa').innerText = ev;
+                document.getElementById('info-topo').innerText = `${ev} | ${formatStr}`;
 
-                // 2. SINCRONIZA EVENTO E MOLDURA
-                // Se o campo for "evento" ou "nome_evento"
-                const novoEvento = d.evento || d.nome_evento || "";
-                if (ev !== novoEvento && novoEvento !== "") {
-                    ev = novoEvento;
-                    document.getElementById('nome-evento').innerText = ev;
-                    await getFrame(ev);
-                }
-
-                // 3. SINCRONIZA FORMATO
-                const fStr = (d.formato || d.layout || "").toUpperCase();
+                // Configura Layout
                 let tipo = "10X15";
-                if (fStr.includes("TIRINHA")) tipo = "TIRINHA";
-                else if (fStr.includes("POLAROID")) tipo = "POLAROID";
+                if (formatStr.toUpperCase().includes("TIRINHA")) tipo = "TIRINHA";
+                else if (formatStr.toUpperCase().includes("POLAROID")) tipo = "POLAROID";
 
                 if (configAtual.key !== tipo) {
                     configAtual = FORMATOS[tipo];
                     total = configAtual.fotos;
                     checkOrientation();
                 }
+
+                // Busca Moldura se mudar o evento
+                await getFrame(ev);
 
             } catch (e) { console.error("Erro sync:", e); }
         }
@@ -138,14 +141,9 @@
             try {
                 const r = await fetch(`${API}/list-photos?evento=${encodeURIComponent(nomeEvento)}&t=${Date.now()}`);
                 const arquivos = await r.json();
-                // Procura por qualquer .png que seja a moldura
                 const p = arquivos.find(x => x.key.toLowerCase().endsWith('.png'));
-                if (p) {
-                    frame = `${API}/photo/${encodeURIComponent(p.key)}`;
-                    return true;
-                }
-                frame = ""; return false;
-            } catch (e) { return false; }
+                frame = p ? `${API}/photo/${encodeURIComponent(p.key)}` : "";
+            } catch (e) { frame = ""; }
         }
 
         function checkOrientation() {
@@ -155,23 +153,33 @@
             } else { overlay.style.display = "none"; }
         }
 
-        async function ligar() {
-            await sync();
-            if (!ev || ev === "Sincronizando...") { alert("Aguarde a sincronização do evento."); return; }
-            if (!frame) { alert("Nenhuma moldura (.png) encontrada para este evento."); return; }
-            
-            document.getElementById('cam-container').style.display = "block";
-            startStream(currentFacingMode);
-            document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
-            checkOrientation();
+        async function switchCam() {
+            currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
+            if (stream) {
+                await startStream(currentFacingMode);
+            }
         }
 
         async function startStream(mode) {
             if (stream) stream.getTracks().forEach(t => t.stop());
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode, width: 1920, height: 1080 } });
-            const v = document.getElementById('v');
-            v.srcObject = stream;
-            if (mode === "user") v.classList.add('mirror'); else v.classList.remove('mirror');
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: mode, width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                });
+                const v = document.getElementById('v');
+                v.srcObject = stream;
+                if (mode === "user") v.classList.add('mirror'); else v.classList.remove('mirror');
+            } catch (e) { alert("Erro ao acessar câmera."); }
+        }
+
+        async function ligar() {
+            await sync();
+            if (!frame) { alert("Moldura não encontrada para este evento!"); return; }
+            
+            document.getElementById('cam-container').style.display = "block";
+            await startStream(currentFacingMode);
+            document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
+            checkOrientation();
         }
 
         function voltarHome() {
@@ -183,12 +191,12 @@
             document.getElementById('shutter-placeholder').innerHTML = "";
             pics = [];
             for(let n=1; n<=total; n++) {
-                document.getElementById('indicator').innerText = `FOTO ${n} / ${total}`;
+                document.getElementById('sub-count').innerText = `FOTO ${n} DE ${total}`;
                 for(let i=5; i>0; i--) {
-                    document.getElementById('counter').innerText = i;
+                    document.getElementById('num-count').innerText = i;
                     await new Promise(r => setTimeout(r, 1000));
                 }
-                document.getElementById('counter').innerText = "";
+                document.getElementById('num-count').innerText = "";
                 snap();
                 await new Promise(r => setTimeout(r, 1000));
             }
@@ -203,7 +211,7 @@
             const ctx = cv.getContext('2d');
             if (currentFacingMode === "user") { ctx.translate(cv.width, 0); ctx.scale(-1, 1); }
             ctx.drawImage(v, 0, 0);
-            const img = new Image(); img.src = cv.toDataURL('image/jpeg');
+            const img = new Image(); img.src = cv.toDataURL('image/jpeg', 0.9);
             pics.push(img);
         }
 
@@ -214,6 +222,7 @@
             m.crossOrigin = "anonymous";
             m.onload = () => {
                 cv.width = configAtual.w; cv.height = configAtual.h;
+                ctx.fillStyle = "white"; ctx.fillRect(0,0,cv.width, cv.height);
                 const hPart = cv.height / total;
                 pics.forEach((img, i) => {
                     const s = Math.max(cv.width/img.width, hPart/img.height);
@@ -222,17 +231,17 @@
                 });
                 ctx.drawImage(m, 0, 0, cv.width, cv.height);
                 document.getElementById('loader').innerHTML = `
-                    <img src="${cv.toDataURL('image/jpeg')}" style="max-height:60vh; border:2px solid var(--neon);">
-                    <div style="margin-top:20px;">
-                        <button class="btn-action" style="background:var(--neon);" onclick="enviar()">IMPRIMIR</button>
-                        <button class="btn-action" style="background:#333;color:white;" onclick="location.reload()">REFAZER</button>
+                    <img src="${cv.toDataURL('image/jpeg')}" style="max-height:60vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
+                    <div style="margin-top:25px; display:flex; gap:10px;">
+                        <button class="btn-action" style="background:var(--neon); color:black;" onclick="enviar()">IMPRIMIR</button>
+                        <button class="btn-action" style="background:#333;color:white;" onclick="location.reload()">SAIR</button>
                     </div>`;
             };
             m.src = frame + "?t=" + Date.now();
         }
 
         async function enviar() {
-            document.getElementById('loader').innerHTML = '<div class="spin"></div><p>ENVIANDO...</p>';
+            document.getElementById('loader').innerHTML = '<div class="spin"></div><p style="color:var(--neon)">ENVIANDO...</p>';
             document.getElementById('c-strip').toBlob(async b => {
                 const fd = new FormData();
                 fd.append('file', b, 'foto.jpg'); fd.append('evento', ev); fd.append('tipo', 'foto');
