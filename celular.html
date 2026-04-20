@@ -100,9 +100,9 @@
         let cancelado = false; let currentFacingMode = "user"; 
         
         const FORMATOS = {
-            "TIRINHA": { w: 600, h: 1800, fotos: 3, landscape: false, padX: 0, padY: 2, divider: true },
-            "POLAROID": { w: 1200, h: 1500, fotos: 1, landscape: false, padX: 0, padY: 20, divider: false },
-            "10X15": { w: 1800, h: 1200, fotos: 1, landscape: true, padX: 0, padY: 0, divider: false }
+            "TIRINHA": { w: 600, h: 1800, fotos: 3, landscape: false, padX: 0, padY: 2, divider: true, key: "TIRINHA" },
+            "POLAROID": { w: 1200, h: 1500, fotos: 1, landscape: false, padX: 0, padY: 20, divider: false, key: "POLAROID" },
+            "10X15": { w: 1800, h: 1200, fotos: 1, landscape: true, padX: 0, padY: 0, divider: false, key: "10X15" }
         };
         
         let configAtual = FORMATOS["10X15"];
@@ -111,29 +111,52 @@
             try {
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
                 const d = await r.json();
-                if (d.status === "OFFLINE") document.getElementById('offline-screen').style.display = "flex";
-                else document.getElementById('offline-screen').style.display = "none";
                 
-                const f = String(d.formato || d.layout || "").toUpperCase().trim();
-                if (ev !== d.evento || (f && f !== configAtual.key)) {
+                // Controle de Offline
+                if (d.status === "OFFLINE") {
+                    document.getElementById('offline-screen').style.display = "flex";
+                } else {
+                    document.getElementById('offline-screen').style.display = "none";
+                }
+                
+                // Atualiza o nome do evento se houver mudança
+                if (ev !== d.evento) {
                     ev = d.evento;
                     document.getElementById('nome-evento').innerText = ev;
-                    if (f.includes("POLAROID")) configAtual = {...FORMATOS["POLAROID"], key: "POLAROID"};
-                    else if (f.includes("TIRINHA")) configAtual = {...FORMATOS["TIRINHA"], key: "TIRINHA"};
-                    else configAtual = {...FORMATOS["10X15"], key: "10X15"};
-                    total = configAtual.fotos;
                     getFrame(ev);
-                    checkOrientation();
                 }
-            } catch (e) { document.getElementById('offline-screen').style.display = "flex"; }
+
+                // IDENTIFICAÇÃO DO FORMATO (Ajuste central)
+                const fStr = String(d.formato || d.layout || "").toUpperCase().trim();
+                let novoTipo = "10X15"; // Default
+                
+                if (fStr.includes("TIRINHA")) novoTipo = "TIRINHA";
+                else if (fStr.includes("POLAROID")) novoTipo = "POLAROID";
+
+                // Se o formato mudou desde a última sincronização
+                if (configAtual.key !== novoTipo) {
+                    configAtual = FORMATOS[novoTipo];
+                    total = configAtual.fotos;
+                    checkOrientation(); // Atualiza o sensor de rotação imediatamente
+                    console.log("Layout atualizado para:", novoTipo);
+                }
+
+            } catch (e) { 
+                console.error("Erro sync:", e);
+                document.getElementById('offline-screen').style.display = "flex"; 
+            }
         }
 
         function checkOrientation() {
             const overlay = document.getElementById('rotate-overlay');
+            // Só pede para girar se for modo LANDSCAPE e o celular estiver em pé
             if (configAtual.landscape && window.innerWidth < window.innerHeight) {
                 overlay.style.display = "flex";
-            } else { overlay.style.display = "none"; }
+            } else { 
+                overlay.style.display = "none"; 
+            }
         }
+        
         window.addEventListener('resize', checkOrientation);
 
         async function getFrame(e) {
@@ -263,7 +286,6 @@
             
             document.getElementById('c-strip').toBlob(async b => {
                 const fd = new FormData();
-                // Adicionado campo 'tipo' e nome dinâmico para garantir o upload
                 fd.append('file', b, `foto_${Date.now()}.jpg`); 
                 fd.append('evento', ev);
                 fd.append('tipo', 'foto'); 
