@@ -26,21 +26,22 @@
             overflow-x: hidden; 
         }
 
-        /* --- CORREÇÃO DA IMAGEM GIGANTE --- */
-        #modal-print {
-            display: none !important; 
-        }
+        /* --- CORREÇÃO DA IMPRESSÃO --- */
+        #modal-print { display: none; }
 
         @media print {
-            body * { display: none !important; }
+            body * { visibility: hidden; }
             #modal-print, #modal-print img {
+                visibility: visible;
                 display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
                 width: 100% !important;
-                height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            @page { margin: 0; }
+            @page { margin: 0; size: auto; }
         }
 
         header { 
@@ -89,7 +90,6 @@
             top: 50px;
             cursor: pointer;
             z-index: 5001;
-            transition: 0.4s;
         }
 
         .menu-trigger span {
@@ -99,13 +99,6 @@
             background: var(--accent);
             margin: 6px 0;
             box-shadow: var(--neon-shadow);
-            animation: pulse-neon 2s infinite;
-        }
-
-        @keyframes pulse-neon {
-            0% { box-shadow: 0 0 5px var(--accent); opacity: 0.8; }
-            50% { box-shadow: 0 0 20px var(--accent); opacity: 1; }
-            100% { box-shadow: 0 0 5px var(--accent); opacity: 0.8; }
         }
 
         .sidebar { 
@@ -255,27 +248,20 @@
                     todasFotos.push({ key: f.key, url: imgFundida, id: fotosJpg.indexOf(f) + 1 });
                     chavesLocais.add(f.key);
                     mudou = true;
+                    
                     if (!processadas.has(f.key)) {
                         processadas.add(f.key);
                         localStorage.setItem('impressas_local', JSON.stringify([...processadas]));
-                        if (!primeiraCarga) addToPrintQueue(imgFundida);
+                        // Só manda para fila de impressão se não for a carga inicial da página
+                        if (!primeiraCarga) {
+                            addToPrintQueue(imgFundida);
+                        }
                     }
                 }
             }
             if (mudou) { todasFotos.sort((a, b) => b.id - a.id); render(); }
             primeiraCarga = false;
         } catch(e) { console.error(e); }
-    }
-
-    // --- CORREÇÃO QRCODE: ABRE FOTO DIRETO SE VIER PELO LINK ?dl= ---
-    function verificarLinkDireto() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const fotoUrl = urlParams.get('dl');
-        if (fotoUrl) {
-            setTimeout(() => {
-                abrirZoom(decodeURIComponent(fotoUrl));
-            }, 1500);
-        }
     }
 
     function render() {
@@ -327,6 +313,7 @@
 
     function reimprimirAtual() { addToPrintQueue(document.getElementById('img-zoom').src); }
 
+    // --- SISTEMA DE FILA DE IMPRESSÃO ---
     function addToPrintQueue(src) { 
         printQueue.push(src); 
         if (!isPrinting) processQueue(); 
@@ -335,13 +322,15 @@
     function processQueue() {
         if (printQueue.length === 0) { isPrinting = false; return; }
         isPrinting = true;
+        
         const currentSrc = printQueue.shift();
         const imgPrint = document.getElementById('img-print');
+        
         imgPrint.onload = () => {
-            window.focus();
             setTimeout(() => { 
                 window.print(); 
-                setTimeout(() => { processQueue(); }, 3500); 
+                // Espera um pouco para fechar a caixa de diálogo e processar a próxima
+                setTimeout(() => { processQueue(); }, 3000); 
             }, 1000);
         };
         imgPrint.src = currentSrc;
@@ -355,16 +344,16 @@
     }
 
     async function limparTudo() {
-        if(confirm("Apagar fotos do servidor?") && prompt("Senha:") === "123") {
+        const pass = prompt("Senha para apagar tudo:");
+        if(pass === "123") {
             await fetch(`${API}/delete-all?evento=${encodeURIComponent(eventoAnterior)}`, { method: 'DELETE' });
+            localStorage.removeItem('impressas_local');
             location.reload();
         }
     }
 
     setInterval(atualizar, 5000);
     atualizar();
-    // Inicia a verificação de link direto ao carregar a página
-    window.addEventListener('load', verificarLinkDireto);
 </script>
 </body>
 </html>
