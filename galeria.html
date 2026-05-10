@@ -26,33 +26,39 @@
             overflow-x: hidden; 
         }
 
-        /* --- CORREÇÃO DEFINITIVA DA TELA BRANCA --- */
-        #modal-print {
-            display: none;
-        }
+        /* --- CONFIGURAÇÃO DE TAMANHO POLAROID (10,7cm x 8,8cm) --- */
+        #modal-print { display: none; }
 
         @media print {
-            /* Esconde absolutamente tudo na tela */
-            body * {
-                visibility: hidden !important;
-            }
-            /* Mostra apenas o container de impressão e a imagem dentro dele */
-            #modal-print, #modal-print img {
-                visibility: visible !important;
-                display: block !important;
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: 100vw !important;
-                height: auto !important;
-            }
             @page {
-                margin: 0;
-                size: auto;
+                size: 10.7cm 8.8cm;
+                margin: 0; /* Remove margens da impressora */
+            }
+            body * { visibility: hidden !important; }
+            
+            #modal-print {
+                display: block !important;
+                visibility: visible !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 10.7cm !important;
+                height: 8.8cm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden;
+            }
+
+            #modal-print img {
+                visibility: visible !important;
+                width: 10.7cm !important;
+                height: 8.8cm !important;
+                object-fit: contain; /* Garante que a foto caiba sem cortar */
+                image-rendering: auto;
             }
         }
 
-        /* Estilos da Interface */
+        /* Interface Visual */
         header { padding: 50px 40px 30px; display: flex; flex-direction: column; align-items: center; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
         .brand-center h1 { margin: 0; font-size: 56px; color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 10px; font-weight: 900; text-transform: uppercase; }
         .brand-center p { margin: 5px 0; font-size: 14px; opacity: 0.8; letter-spacing: 5px; font-weight: 300; color: #fff; text-align: center; }
@@ -243,11 +249,10 @@
         const imgPrint = document.getElementById('img-print');
         
         imgPrint.onload = () => {
-            // Pequeno delay para garantir que a imagem está no cache do navegador
             setTimeout(() => { 
                 window.print(); 
-                setTimeout(() => { processQueue(); }, 2000); 
-            }, 500);
+                setTimeout(() => { processQueue(); }, 3000); 
+            }, 800);
         };
         imgPrint.src = currentSrc;
     }
