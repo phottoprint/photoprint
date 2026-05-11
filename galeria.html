@@ -15,67 +15,71 @@
             --glass-border: 1px solid rgba(57, 255, 20, 0.3);
         }
 
-        body { background: #000; color: var(--text); font-family: sans-serif; margin: 0; overflow-x: hidden; }
+        body { background: #000; color: var(--text); font-family: sans-serif; margin: 0; }
 
-        /* --- CONTROLE DE IMPRESSÃO --- */
+        /* --- CONTROLE DE IMPRESSÃO - CORREÇÃO DE TAMANHO --- */
         #modal-print { display: none; }
 
         @media print {
             body * { visibility: hidden !important; }
+            
+            /* Remove margens e define o tamanho da página dinamicamente */
+            @page { margin: 0; padding: 0; }
+
             #modal-print, #modal-print img {
                 visibility: visible !important;
                 display: block !important;
-                position: fixed; left: 0; top: 0;
+                position: absolute;
+                top: 0;
+                left: 0;
             }
-            /* Classes de tamanho real para a impressora */
-            .print-tirinha { width: 5cm !important; height: 15cm !important; }
-            .print-tradicional { width: 15cm !important; height: 10cm !important; }
-            .print-polaroid { width: 9cm !important; height: 11cm !important; }
-            
-            @page { margin: 0; }
+
+            /* Força os tamanhos exatos em CM na hora da saída */
+            .print-tirinha, .print-tirinha img { width: 5cm !important; height: 15cm !important; }
+            .print-tradicional, .print-tradicional img { width: 15cm !important; height: 10cm !important; }
+            .print-polaroid, .print-polaroid img { width: 9cm !important; height: 11cm !important; }
         }
 
-        /* Interface Estilizada */
-        header { padding: 30px; display: flex; flex-direction: column; align-items: center; border-bottom: var(--glass-border); }
-        h1 { color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 5px; margin: 0; }
+        /* Interface da Galeria */
+        header { padding: 20px; display: flex; flex-direction: column; align-items: center; border-bottom: var(--glass-border); background: #000; position: sticky; top: 0; z-index: 1000; }
+        h1 { color: var(--accent); text-shadow: var(--neon-shadow); font-size: 24px; margin: 0; }
         
-        .sidebar { position: fixed; right: -320px; top: 0; width: 280px; height: 100%; background: rgba(10,10,10,0.98); z-index: 5000; transition: 0.4s; padding: 40px 20px; border-left: var(--glass-border); }
+        .sidebar { position: fixed; right: -320px; top: 0; width: 280px; height: 100%; background: #0a0a0a; z-index: 5000; transition: 0.4s; padding: 40px 20px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
+        .menu-trigger { position: absolute; right: 20px; top: 20px; cursor: pointer; z-index: 5001; color: var(--accent); font-size: 25px; }
 
-        .menu-trigger { position: absolute; right: 20px; top: 20px; cursor: pointer; z-index: 5001; color: var(--accent); font-size: 30px; }
+        .gallery-container { padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .card { background: #111; border-radius: 8px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; }
+        .card img { width: 100%; display: block; height: 200px; object-fit: cover; }
+        .badge { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #000; padding: 2px 6px; font-weight: bold; font-size: 11px; }
 
-        .gallery-container { padding: 40px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .card { background: #111; border-radius: 10px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; }
-        .card img { width: 100%; display: block; }
-        .badge { position: absolute; top: 10px; left: 10px; background: var(--accent); color: #000; padding: 2px 8px; font-weight: bold; border-radius: 4px; font-size: 12px; }
-
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
-        .modal img { max-height: 80vh; border: 2px solid var(--accent); }
-        .btn-print { margin-top: 20px; padding: 15px 40px; background: var(--accent); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; }
-
-        select, input { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid var(--accent); color: #fff; border-radius: 5px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
+        .modal img { max-height: 70vh; border: 2px solid var(--accent); box-shadow: var(--neon-shadow); }
+        
+        .btn-print { margin-top: 20px; padding: 15px 40px; background: var(--accent); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        select, input { width: 100%; padding: 10px; margin: 10px 0; background: #222; border: 1px solid var(--accent); color: #fff; }
     </style>
 </head>
 <body>
 
-    <div class="menu-trigger" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="fas fa-bars"></i></div>
+    <div class="menu-trigger" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="fas fa-cog"></i></div>
 
     <div class="sidebar" id="sidebar">
-        <h2 style="color: var(--accent);">CONFIGURAÇÕES</h2>
-        <label>Formato de Impressão:</label>
+        <h3 style="color: var(--accent);">FORMATO ATIVO</h3>
         <select id="formato-saida">
             <option value="polaroid">Polaroid (9x11 cm)</option>
             <option value="tradicional" selected>Tradicional (15x10 cm)</option>
             <option value="tirinha">Tirinha (5x15 cm)</option>
         </select>
-        <button class="btn-print" style="width: 100%;" onclick="baixarZip()">BAIXAR GALERIA (ZIP)</button>
-        <button class="btn-print" style="width: 100%; background: var(--danger); margin-top: 10px;" onclick="limparTudo()">APAGAR TUDO</button>
+        <hr style="border-color: #333; margin: 20px 0;">
+        <button class="btn-print" style="width: 100%;" onclick="baixarZip()">BAIXAR TUDO (ZIP)</button>
+        <button class="btn-print" style="width: 100%; background: var(--danger); margin-top: 10px;" onclick="limparTudo()">REINICIAR GALERIA</button>
     </div>
 
     <header>
         <h1 id="view-evento">CARREGANDO...</h1>
-        <input type="number" id="input-busca" placeholder="DIGITE O Nº DA FOTO" style="width: 250px;" oninput="buscarFoto(this.value)">
+        <input type="number" id="input-busca" placeholder="🔍 Nº DA FOTO" style="width: 180px; text-align: center;" oninput="buscarFoto(this.value)">
     </header>
 
     <main class="gallery-container">
@@ -84,7 +88,7 @@
 
     <div class="modal" id="modal-zoom" onclick="this.style.display='none'">
         <img id="img-zoom">
-        <button class="btn-print" onclick="event.stopPropagation(); reimprimirAtual()">IMPRIMIR AGORA</button>
+        <button class="btn-print" onclick="event.stopPropagation(); reimprimirAtual()">IMPRIMIR ESTA FOTO</button>
     </div>
 
     <div id="modal-print"><img id="img-print"></div>
@@ -98,10 +102,10 @@
     let isPrinting = false;
     let primeiraCarga = true;
 
-    // Configurações exatas para cada formato (Escala de 100px por cm para alta qualidade)
+    // Medidas precisas em pixels para o processamento (1cm = 100px)
     const SPECS = {
         polaroid:    { w: 900,  h: 1100, fotoW: 800, fotoH: 750, fotoX: 50,  fotoY: 50,  class: 'print-polaroid' },
-        tradicional: { w: 1500, h: 1000, fotoW: 1500, fotoH: 1000, fotoX: 0,  fotoY: 0,  class: 'print-tradicional' },
+        tradicional: { w: 1500, h: 1000, fotoW: 1500, fotoH: 1000, fotoX: 0,  fotoY: 0,   class: 'print-tradicional' },
         tirinha:     { w: 500,  h: 1500, fotoW: 420,  fotoH: 310,  fotoX: 40,  fotoY: 40,  class: 'print-tirinha' }
     };
 
@@ -109,7 +113,7 @@
         try {
             const resStatus = await fetch(`${API}/status?t=${Date.now()}`);
             const config = await resStatus.json();
-            document.getElementById('view-evento').innerText = (config.evento || "EVENTO").toUpperCase();
+            document.getElementById('view-evento').innerText = (config.evento || "GALERIA").toUpperCase();
 
             const resF = await fetch(`${API}/list-photos?evento=${encodeURIComponent(config.evento)}&t=${Date.now()}`);
             const dados = await resF.json();
@@ -120,8 +124,7 @@
             for (const f of fotosJpg) {
                 if (!todasFotos.find(x => x.key === f.key)) {
                     const imgFinal = await gerarComposicao(`${API}/photo/${encodeURIComponent(f.key)}`, urlMoldura);
-                    const novaFoto = { key: f.key, url: imgFinal, id: fotosJpg.indexOf(f) + 1 };
-                    todasFotos.push(novaFoto);
+                    todasFotos.push({ key: f.key, url: imgFinal, id: fotosJpg.indexOf(f) + 1 });
                     
                     if (!processadas.has(f.key)) {
                         processadas.add(f.key);
@@ -146,7 +149,7 @@
 
         const load = (url) => new Promise(res => {
             const i = new Image(); i.crossOrigin = "anonymous";
-            i.onload = () => res(i); i.onerror = () => res(null); i.src = url;
+            i.onload = () => res(i); i.src = url;
         });
 
         const imgFoto = await load(fotoUrl);
@@ -154,23 +157,19 @@
 
         if (imgFoto) {
             if (fmt === 'tirinha') {
-                // Layout Tirinha: 3 fotos com espaçamento de 0.3cm (30px)
                 ctx.drawImage(imgFoto, s.fotoX, s.fotoY, s.fotoW, s.fotoH);
                 ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 340, s.fotoW, s.fotoH);
                 ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 680, s.fotoW, s.fotoH);
             } else {
-                // Polaroid ou Tradicional
                 ctx.drawImage(imgFoto, s.fotoX, s.fotoY, s.fotoW, s.fotoH);
             }
         }
-
         if (imgM) ctx.drawImage(imgM, 0, 0, s.w, s.h);
         return canvas.toDataURL("image/jpeg", 0.9);
     }
 
     function render() {
-        const grid = document.getElementById('grid-fotos');
-        grid.innerHTML = todasFotos.slice().reverse().map(f => `
+        document.getElementById('grid-fotos').innerHTML = todasFotos.slice().reverse().map(f => `
             <div class="card" onclick="abrirZoom('${f.url}')">
                 <span class="badge">#${f.id}</span>
                 <img src="${f.url}">
@@ -192,7 +191,10 @@
         
         containerP.className = SPECS[document.getElementById('formato-saida').value].class;
         imgP.onload = () => {
-            setTimeout(() => { window.print(); setTimeout(processNext, 2000); }, 500);
+            setTimeout(() => { 
+                window.print(); 
+                setTimeout(processNext, 2000); 
+            }, 600);
         };
         imgP.src = src;
     }
@@ -209,7 +211,7 @@
     }
 
     async function limparTudo() {
-        if(confirm("Deseja apagar todas as fotos?") && prompt("Senha:") === "123") {
+        if(confirm("Reiniciar galeria?") && prompt("Senha:") === "123") {
             localStorage.removeItem('impressas_local');
             location.reload();
         }
