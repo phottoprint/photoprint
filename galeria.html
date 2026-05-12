@@ -17,32 +17,41 @@
 
         body { background: #000; color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
 
-        /* --- AJUSTE DE IMPRESSÃO (RESOLVE O PROBLEMA DE VÁRIAS FOLHAS) --- */
+        /* --- AJUSTE DE IMPRESSÃO DEFINITIVO (BLOQUEIA FOLHAS EXTRAS) --- */
         #modal-print { display: none; }
 
         @media print {
-            html, body { height: auto; overflow: hidden; margin: 0 !important; padding: 0 !important; }
+            /* Esconde tudo da interface */
             body * { visibility: hidden !important; }
-            
+            html, body { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                overflow: hidden !important; 
+                height: 100% !important;
+            }
+
+            /* Configura a página para margem zero */
             @page { margin: 0; size: auto; }
 
+            /* Mostra apenas o container de impressão */
             #modal-print {
                 display: block !important;
                 visibility: visible !important;
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
-                page-break-after: avoid;
-                page-break-before: avoid;
+                width: 100% !important;
+                height: 100% !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
             }
 
             #modal-print img {
                 visibility: visible !important;
-                display: block;
-                width: 100%; /* O JS controlará o tamanho exato em CM no container */
-                height: auto;
+                display: block !important;
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important; /* Garante que a foto não vaze da folha */
             }
         }
 
@@ -81,7 +90,7 @@
         <select id="formato-saida">
             <option value="polaroid">Polaroid (9x11 cm)</option>
             <option value="tradicional" selected>Tradicional (15x10 cm)</option>
-            <option value="tirinha">Tirinha (5x15 cm)</option>
+            <option value="tirinha">Tirinha (6x15 cm)</option>
         </select>
         <button class="side-btn" onclick="baixarZip()">BAIXAR GALERIA (ZIP)</button>
         <button class="side-btn" style="background: var(--danger);" onclick="limparTudo()">APAGAR TUDO</button>
@@ -117,11 +126,11 @@
     let printQueue = [];
     let isPrinting = false;
 
-    // Configurações exatas para cada formato (Base 100px = 1cm)
+    // Configurações exatas para cada formato (Ajustado para 300 DPI de qualidade)
     const SPECS = {
-        polaroid:    { w: 900,  h: 1100, fotoW: 800, fotoH: 750, fotoX: 50,  fotoY: 50,  cmW: 9,  cmH: 11 },
-        tradicional: { w: 1500, h: 1000, fotoW: 1500, fotoH: 1000, fotoX: 0,  fotoY: 0,   cmW: 15, cmH: 10 },
-        tirinha:     { w: 500,  h: 1500, fotoW: 420,  fotoH: 310,  fotoX: 40,  fotoY: 40,  cmW: 5,  cmH: 15 }
+        polaroid:    { w: 1063, h: 1299, fotoW: 945,  fotoH: 885,  fotoX: 59,  fotoY: 59,  cmW: 9,  cmH: 11 },
+        tradicional: { w: 1772, h: 1181, fotoW: 1772, fotoH: 1181, fotoX: 0,   fotoY: 0,   cmW: 15, cmH: 10 },
+        tirinha:     { w: 709,  h: 1772, fotoW: 590,  fotoH: 440,  fotoX: 59,  fotoY: 59,  cmW: 6,  cmH: 15 }
     };
 
     async function atualizar() {
@@ -172,15 +181,16 @@
 
         if (imgFoto) {
             if (fmt === 'tirinha') {
+                // Multiplicação da foto para o formato tirinha
                 ctx.drawImage(imgFoto, s.fotoX, s.fotoY, s.fotoW, s.fotoH);
-                ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 340, s.fotoW, s.fotoH);
-                ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 680, s.fotoW, s.fotoH);
+                ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 460, s.fotoW, s.fotoH);
+                ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 920, s.fotoW, s.fotoH);
             } else {
                 ctx.drawImage(imgFoto, s.fotoX, s.fotoY, s.fotoW, s.fotoH);
             }
         }
         if (imgM) ctx.drawImage(imgM, 0, 0, s.w, s.h);
-        return canvas.toDataURL("image/jpeg", 0.9);
+        return canvas.toDataURL("image/jpeg", 0.95);
     }
 
     function render() {
@@ -205,7 +215,7 @@
         const fmt = document.getElementById('formato-saida').value;
         const s = SPECS[fmt];
 
-        // Limpa container e garante que a imagem carregou antes do print
+        // Monta o container com o tamanho CM exato
         containerP.innerHTML = `<img src="${src}" id="active-print-img">`;
         containerP.style.width = s.cmW + "cm";
         containerP.style.height = s.cmH + "cm";
@@ -214,8 +224,9 @@
         img.onload = () => {
             setTimeout(() => { 
                 window.print(); 
-                setTimeout(processNext, 2500); 
-            }, 1000);
+                // Tempo de respiro para o sistema operacional processar
+                setTimeout(processNext, 3000); 
+            }, 1200);
         };
     }
 
@@ -239,7 +250,7 @@
     }
 
     async function limparTudo() {
-        if(confirm("Apagar fotos?")) {
+        if(confirm("Deseja realmente apagar todas as fotos?")) {
             localStorage.removeItem('impressas_local');
             location.reload();
         }
