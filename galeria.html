@@ -17,33 +17,22 @@
 
         body { background: #000; color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
 
-        /* --- AJUSTE DE IMPRESSÃO DEFINITIVO (BLOQUEIA FOLHAS EXTRAS) --- */
+        /* --- AJUSTE DE IMPRESSÃO (RESOLVE O PROBLEMA DE VÁRIAS FOLHAS E ESCALA) --- */
         #modal-print { display: none; }
 
         @media print {
-            /* Esconde tudo da interface */
             body * { visibility: hidden !important; }
-            html, body { 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                overflow: hidden !important; 
-                height: 100% !important;
-            }
-
-            /* Configura a página para margem zero */
+            html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100% !important; }
             @page { margin: 0; size: auto; }
 
-            /* Mostra apenas o container de impressão */
             #modal-print {
                 display: block !important;
                 visibility: visible !important;
                 position: absolute;
-                top: 0;
-                left: 0;
+                top: 0; left: 0;
                 width: 100% !important;
                 height: 100% !important;
                 page-break-after: avoid !important;
-                page-break-before: avoid !important;
             }
 
             #modal-print img {
@@ -51,32 +40,26 @@
                 display: block !important;
                 width: 100% !important;
                 height: 100% !important;
-                object-fit: contain !important; /* Garante que a foto não vaze da folha */
+                object-fit: fill !important; /* Força a imagem a ocupar todo o papel definido */
             }
         }
 
         /* Interface Visual */
         header { padding: 40px; display: flex; flex-direction: column; align-items: center; border-bottom: var(--glass-border); background: linear-gradient(to bottom, #111, #000); }
         .brand-center h1 { color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 8px; margin: 0; font-size: 3rem; }
-        
         .sidebar { position: fixed; right: -320px; top: 0; width: 280px; height: 100%; background: rgba(10,10,10,0.98); z-index: 5000; transition: 0.4s; padding: 40px 20px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
         .menu-trigger { position: absolute; right: 20px; top: 20px; cursor: pointer; z-index: 5001; color: var(--accent); font-size: 30px; }
-
         .search-box { margin-top: 20px; }
         .search-box input { background: #111; border: 1px solid var(--accent); color: #fff; padding: 12px 25px; border-radius: 25px; width: 300px; text-align: center; outline: none; }
-
         .gallery-container { padding: 40px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
         .card { background: #111; border-radius: 15px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
         .card img { width: 100%; display: block; aspect-ratio: 1/1; object-fit: cover; }
         .badge { position: absolute; top: 10px; right: 10px; background: var(--accent); color: #000; padding: 4px 10px; font-weight: bold; border-radius: 5px; font-size: 12px; }
-
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
         .modal img { max-height: 75vh; border: 2px solid var(--accent); border-radius: 10px; }
         .btn-print { margin-top: 20px; padding: 15px 50px; background: var(--accent); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        
         select, .side-btn { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid var(--accent); color: #fff; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
@@ -126,11 +109,12 @@
     let printQueue = [];
     let isPrinting = false;
 
-    // Configurações exatas para cada formato (Ajustado para 300 DPI de qualidade)
+    // Medidas baseadas em 300 DPI (11.81 pixels por mm)
+    const DPI_FACTOR = 11.811; 
     const SPECS = {
-        polaroid:    { w: 1063, h: 1299, fotoW: 945,  fotoH: 885,  fotoX: 59,  fotoY: 59,  cmW: 9,  cmH: 11 },
-        tradicional: { w: 1772, h: 1181, fotoW: 1772, fotoH: 1181, fotoX: 0,   fotoY: 0,   cmW: 15, cmH: 10 },
-        tirinha:     { w: 709,  h: 1772, fotoW: 590,  fotoH: 440,  fotoX: 59,  fotoY: 59,  cmW: 6,  cmH: 15 }
+        polaroid:    { mmW: 90,  mmH: 110, fW: 82,  fH: 78,  fX: 4,  fY: 4 },
+        tradicional: { mmW: 150, mmH: 100, fW: 150, fH: 100, fX: 0,  fY: 0 },
+        tirinha:     { mmW: 60,  mmH: 150, fW: 52,  fH: 38,  fX: 4,  fY: 4, gap: 42 } 
     };
 
     async function atualizar() {
@@ -150,7 +134,6 @@
                     const imgFinal = await gerarComposicao(`${API}/photo/${encodeURIComponent(f.key)}`, urlMoldura);
                     todasFotos.push({ key: f.key, url: imgFinal, id: fotosJpg.indexOf(f) + 1 });
                     chavesLocais.add(f.key);
-                    
                     if (!processadas.has(f.key)) {
                         processadas.add(f.key);
                         localStorage.setItem('impressas_local', JSON.stringify([...processadas]));
@@ -168,8 +151,12 @@
         const canvas = document.getElementById('canvas-process');
         const ctx = canvas.getContext('2d');
         
-        canvas.width = s.w; canvas.height = s.h;
-        ctx.fillStyle = "white"; ctx.fillRect(0,0, s.w, s.h);
+        // Define tamanho do canvas em pixels reais para 300DPI
+        canvas.width = s.mmW * DPI_FACTOR;
+        canvas.height = s.mmH * DPI_FACTOR;
+        
+        ctx.fillStyle = "white"; 
+        ctx.fillRect(0,0, canvas.width, canvas.height);
 
         const load = (url) => new Promise(res => {
             const i = new Image(); i.crossOrigin = "anonymous";
@@ -179,18 +166,24 @@
         const imgFoto = await load(fotoUrl);
         const imgM = molduraUrl ? await load(molduraUrl) : null;
 
+        const fW = s.fW * DPI_FACTOR;
+        const fH = s.fH * DPI_FACTOR;
+        const fX = s.fX * DPI_FACTOR;
+        const fY = s.fY * DPI_FACTOR;
+
         if (imgFoto) {
             if (fmt === 'tirinha') {
-                // Multiplicação da foto para o formato tirinha
-                ctx.drawImage(imgFoto, s.fotoX, s.fotoY, s.fotoW, s.fotoH);
-                ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 460, s.fotoW, s.fotoH);
-                ctx.drawImage(imgFoto, s.fotoX, s.fotoY + 920, s.fotoW, s.fotoH);
+                // Desenha 3 fotos com espaçamento (gap) corrigido para evitar sobreposição
+                const gap = s.gap * DPI_FACTOR;
+                ctx.drawImage(imgFoto, fX, fY, fW, fH);
+                ctx.drawImage(imgFoto, fX, fY + gap, fW, fH);
+                ctx.drawImage(imgFoto, fX, fY + (gap * 2), fW, fH);
             } else {
-                ctx.drawImage(imgFoto, s.fotoX, s.fotoY, s.fotoW, s.fotoH);
+                ctx.drawImage(imgFoto, fX, fY, fW, fH);
             }
         }
-        if (imgM) ctx.drawImage(imgM, 0, 0, s.w, s.h);
-        return canvas.toDataURL("image/jpeg", 0.95);
+        if (imgM) ctx.drawImage(imgM, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL("image/jpeg", 0.98);
     }
 
     function render() {
@@ -215,16 +208,14 @@
         const fmt = document.getElementById('formato-saida').value;
         const s = SPECS[fmt];
 
-        // Monta o container com o tamanho CM exato
         containerP.innerHTML = `<img src="${src}" id="active-print-img">`;
-        containerP.style.width = s.cmW + "cm";
-        containerP.style.height = s.cmH + "cm";
+        containerP.style.width = (s.mmW / 10) + "cm";
+        containerP.style.height = (s.mmH / 10) + "cm";
 
         const img = document.getElementById('active-print-img');
         img.onload = () => {
             setTimeout(() => { 
                 window.print(); 
-                // Tempo de respiro para o sistema operacional processar
                 setTimeout(processNext, 3000); 
             }, 1200);
         };
@@ -236,24 +227,18 @@
     }
 
     function reimprimirAtual() { addToPrintQueue(document.getElementById('img-zoom').src); }
-    
     function buscarFoto(v) { 
         const f = todasFotos.find(x => x.id == v); 
         if(f) abrirZoom(f.url); 
     }
-
     async function baixarZip() {
         const zip = new JSZip();
         todasFotos.forEach(f => zip.file(`foto_${f.id}.jpg`, f.url.split(',')[1], {base64: true}));
         const blob = await zip.generateAsync({type:"blob"});
         saveAs(blob, `Galeria.zip`);
     }
-
     async function limparTudo() {
-        if(confirm("Deseja realmente apagar todas as fotos?")) {
-            localStorage.removeItem('impressas_local');
-            location.reload();
-        }
+        if(confirm("Apagar tudo?")) { localStorage.removeItem('impressas_local'); location.reload(); }
     }
 
     setInterval(atualizar, 5000);
