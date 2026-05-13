@@ -17,49 +17,42 @@
 
         body { background: #000; color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
 
-        /* --- AJUSTE DE IMPRESSÃO (RESOLVE O PROBLEMA DE VÁRIAS FOLHAS E ESCALA) --- */
+        /* Estilos de Impressão */
         #modal-print { display: none; }
-
         @media print {
             body * { visibility: hidden !important; }
             html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100% !important; }
             @page { margin: 0; size: auto; }
-
-            #modal-print {
-                display: block !important;
-                visibility: visible !important;
-                position: absolute;
-                top: 0; left: 0;
-                width: 100% !important;
-                height: 100% !important;
-                page-break-after: avoid !important;
-            }
-
-            #modal-print img {
-                visibility: visible !important;
-                display: block !important;
-                width: 100% !important;
-                height: 100% !important;
-                object-fit: fill !important; /* Força a imagem a ocupar todo o papel definido */
-            }
+            #modal-print { display: block !important; visibility: visible !important; position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
+            #modal-print img { visibility: visible !important; display: block !important; width: 100% !important; height: 100% !important; object-fit: fill !important; }
         }
 
         /* Interface Visual */
         header { padding: 40px; display: flex; flex-direction: column; align-items: center; border-bottom: var(--glass-border); background: linear-gradient(to bottom, #111, #000); }
         .brand-center h1 { color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 8px; margin: 0; font-size: 3rem; }
+        
         .sidebar { position: fixed; right: -320px; top: 0; width: 280px; height: 100%; background: rgba(10,10,10,0.98); z-index: 5000; transition: 0.4s; padding: 40px 20px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
         .menu-trigger { position: absolute; right: 20px; top: 20px; cursor: pointer; z-index: 5001; color: var(--accent); font-size: 30px; }
-        .search-box { margin-top: 20px; }
-        .search-box input { background: #111; border: 1px solid var(--accent); color: #fff; padding: 12px 25px; border-radius: 25px; width: 300px; text-align: center; outline: none; }
+
+        /* Buscador */
+        .search-container { margin-top: 20px; display: flex; gap: 10px; }
+        .search-container input { background: #111; border: 1px solid var(--accent); color: #fff; padding: 12px; border-radius: 25px; width: 200px; outline: none; }
+        .search-btn { background: var(--accent); color: #000; border: none; padding: 12px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+
         .gallery-container { padding: 40px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        .card { background: #111; border-radius: 15px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; transition: 0.3s; }
+        .card { background: #111; border-radius: 15px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; }
         .card img { width: 100%; display: block; aspect-ratio: 1/1; object-fit: cover; }
         .badge { position: absolute; top: 10px; right: 10px; background: var(--accent); color: #000; padding: 4px 10px; font-weight: bold; border-radius: 5px; font-size: 12px; }
+
+        /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
-        .modal img { max-height: 75vh; border: 2px solid var(--accent); border-radius: 10px; }
-        .btn-print { margin-top: 20px; padding: 15px 50px; background: var(--accent); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .modal img { max-height: 70vh; border: 2px solid var(--accent); border-radius: 10px; }
+        .modal-actions { display: flex; gap: 20px; margin-top: 20px; }
+        .btn-print { padding: 15px 40px; background: var(--accent); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        .btn-delete { padding: 15px 40px; background: var(--danger); color: white; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        
         select, .side-btn { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid var(--accent); color: #fff; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
@@ -84,8 +77,9 @@
             <h1>PHOTO PRINT</h1>
             <p id="view-evento" style="text-align: center; opacity: 0.7; letter-spacing: 3px;">CARREGANDO...</p>
         </div>
-        <div class="search-box">
-            <input type="number" id="input-busca" placeholder="🔍 Nº DA FOTO" oninput="buscarFoto(this.value)">
+        <div class="search-container">
+            <input type="number" id="input-busca" placeholder="Nº da Foto">
+            <button class="search-btn" onclick="buscarBotao()">BUSCAR</button>
         </div>
     </header>
 
@@ -93,9 +87,13 @@
         <div id="grid-fotos" class="grid"></div>
     </main>
 
-    <div class="modal" id="modal-zoom" onclick="this.style.display='none'">
+    <div class="modal" id="modal-zoom">
         <img id="img-zoom">
-        <button class="btn-print" onclick="event.stopPropagation(); reimprimirAtual()">IMPRIMIR AGORA</button>
+        <div class="modal-actions">
+            <button class="btn-print" onclick="reimprimirAtual()">IMPRIMIR AGORA</button>
+            <button class="btn-delete" onclick="excluirFotoAtual()">EXCLUIR FOTO</button>
+            <button style="background: #555; color: white;" class="btn-print" onclick="fecharModal()">VOLTAR</button>
+        </div>
     </div>
 
     <div id="modal-print"></div>
@@ -108,13 +106,13 @@
     let processadas = new Set(JSON.parse(localStorage.getItem('impressas_local') || '[]'));
     let printQueue = [];
     let isPrinting = false;
+    let fotoAbertaKey = null;
 
-    // Medidas baseadas em 300 DPI (11.81 pixels por mm)
     const DPI_FACTOR = 11.811; 
     const SPECS = {
         polaroid:    { mmW: 90,  mmH: 110, fW: 82,  fH: 78,  fX: 4,  fY: 4 },
         tradicional: { mmW: 150, mmH: 100, fW: 150, fH: 100, fX: 0,  fY: 0 },
-        tirinha:     { mmW: 60,  mmH: 150, fW: 52,  fH: 38,  fX: 4,  fY: 4, gap: 42 } 
+        tirinha:     { mmW: 60,  mmH: 150, fW: 52,  fH: 38,  fX: 4,  fY: 4, gap: 46 } // Ajuste no gap (46)
     };
 
     async function atualizar() {
@@ -125,24 +123,28 @@
 
             const resF = await fetch(`${API}/list-photos?evento=${encodeURIComponent(config.evento)}&t=${Date.now()}`);
             const dados = await resF.json();
+            
             const molduraObj = dados.find(f => f.key.toLowerCase().endsWith('.png'));
             const urlMoldura = molduraObj ? `${API}/photo/${encodeURIComponent(molduraObj.key)}` : "";
             const fotosJpg = dados.filter(f => !f.key.toLowerCase().endsWith('.png'));
 
+            let novasFotos = [];
             for (const f of fotosJpg) {
                 if (!chavesLocais.has(f.key)) {
                     const imgFinal = await gerarComposicao(`${API}/photo/${encodeURIComponent(f.key)}`, urlMoldura);
-                    todasFotos.push({ key: f.key, url: imgFinal, id: fotosJpg.indexOf(f) + 1 });
+                    const novaFoto = { key: f.key, url: imgFinal, id: fotosJpg.indexOf(f) + 1 };
+                    todasFotos.push(novaFoto);
                     chavesLocais.add(f.key);
+                    
                     if (!processadas.has(f.key)) {
                         processadas.add(f.key);
                         localStorage.setItem('impressas_local', JSON.stringify([...processadas]));
                         addToPrintQueue(imgFinal);
                     }
-                    render();
                 }
             }
-        } catch(e) { console.log(e); }
+            render();
+        } catch(e) { console.error(e); }
     }
 
     async function gerarComposicao(fotoUrl, molduraUrl) {
@@ -151,7 +153,6 @@
         const canvas = document.getElementById('canvas-process');
         const ctx = canvas.getContext('2d');
         
-        // Define tamanho do canvas em pixels reais para 300DPI
         canvas.width = s.mmW * DPI_FACTOR;
         canvas.height = s.mmH * DPI_FACTOR;
         
@@ -173,10 +174,12 @@
 
         if (imgFoto) {
             if (fmt === 'tirinha') {
-                // Desenha 3 fotos com espaçamento (gap) corrigido para evitar sobreposição
                 const gap = s.gap * DPI_FACTOR;
+                // Foto 1
                 ctx.drawImage(imgFoto, fX, fY, fW, fH);
+                // Foto 2 - Corrigido para não empurrar a 1
                 ctx.drawImage(imgFoto, fX, fY + gap, fW, fH);
+                // Foto 3
                 ctx.drawImage(imgFoto, fX, fY + (gap * 2), fW, fH);
             } else {
                 ctx.drawImage(imgFoto, fX, fY, fW, fH);
@@ -188,11 +191,55 @@
 
     function render() {
         document.getElementById('grid-fotos').innerHTML = todasFotos.slice().reverse().map(f => `
-            <div class="card" onclick="abrirZoom('${f.url}')">
+            <div class="card" onclick="abrirZoom('${f.url}', '${f.key}')">
                 <span class="badge">#${f.id}</span>
                 <img src="${f.url}">
             </div>
         `).join('');
+    }
+
+    function abrirZoom(url, key) {
+        fotoAbertaKey = key;
+        document.getElementById('img-zoom').src = url;
+        document.getElementById('modal-zoom').style.display = 'flex';
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-zoom').style.display = 'none';
+        fotoAbertaKey = null;
+    }
+
+    function buscarBotao() {
+        const num = document.getElementById('input-busca').value;
+        const f = todasFotos.find(x => x.id == num);
+        if(f) abrirZoom(f.url, f.key);
+        else alert("Foto não encontrada!");
+    }
+
+    async function excluirFotoAtual() {
+        if(!fotoAbertaKey) return;
+        if(confirm("Deseja excluir esta foto permanentemente do R2?")) {
+            try {
+                const res = await fetch(`${API}/photo?key=${encodeURIComponent(fotoAbertaKey)}`, { method: 'DELETE' });
+                if(res.ok) {
+                    alert("Foto excluída!");
+                    location.reload();
+                }
+            } catch (e) { alert("Erro ao excluir."); }
+        }
+    }
+
+    async function limparTudo() {
+        if(confirm("ATENÇÃO: Isso apagará TODAS as fotos da galeria e do Cloudflare R2. Confirma?")) {
+            try {
+                const res = await fetch(`${API}/photo?key=all`, { method: 'DELETE' });
+                if(res.ok) {
+                    localStorage.removeItem('impressas_local');
+                    alert("Galeria limpa com sucesso!");
+                    location.reload();
+                }
+            } catch (e) { alert("Erro ao limpar R2."); }
+        }
     }
 
     function addToPrintQueue(src) {
@@ -205,40 +252,17 @@
         isPrinting = true;
         const src = printQueue.shift();
         const containerP = document.getElementById('modal-print');
-        const fmt = document.getElementById('formato-saida').value;
-        const s = SPECS[fmt];
-
-        containerP.innerHTML = `<img src="${src}" id="active-print-img">`;
-        containerP.style.width = (s.mmW / 10) + "cm";
-        containerP.style.height = (s.mmH / 10) + "cm";
-
-        const img = document.getElementById('active-print-img');
-        img.onload = () => {
-            setTimeout(() => { 
-                window.print(); 
-                setTimeout(processNext, 3000); 
-            }, 1200);
-        };
-    }
-
-    function abrirZoom(url) {
-        document.getElementById('img-zoom').src = url;
-        document.getElementById('modal-zoom').style.display = 'flex';
+        containerP.innerHTML = `<img src="${src}">`;
+        setTimeout(() => { window.print(); setTimeout(processNext, 3000); }, 1200);
     }
 
     function reimprimirAtual() { addToPrintQueue(document.getElementById('img-zoom').src); }
-    function buscarFoto(v) { 
-        const f = todasFotos.find(x => x.id == v); 
-        if(f) abrirZoom(f.url); 
-    }
+
     async function baixarZip() {
         const zip = new JSZip();
         todasFotos.forEach(f => zip.file(`foto_${f.id}.jpg`, f.url.split(',')[1], {base64: true}));
         const blob = await zip.generateAsync({type:"blob"});
         saveAs(blob, `Galeria.zip`);
-    }
-    async function limparTudo() {
-        if(confirm("Apagar tudo?")) { localStorage.removeItem('impressas_local'); location.reload(); }
     }
 
     setInterval(atualizar, 5000);
