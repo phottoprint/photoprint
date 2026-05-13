@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - Panel v2.6</title>
+    <title>PHOTO PRINT - Panel v2.7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -82,7 +82,7 @@
     <header>
         <div class="brand-center">
             <h1>PHOTO PRINT</h1>
-            <div class="version-tag">AVATAR & PHOTO SYSTEM v2.6</div>
+            <div class="version-tag">AVATAR & PHOTO SYSTEM v2.7</div>
             <p id="view-evento" style="opacity: 0.6;">CARREGANDO...</p>
         </div>
         <div class="search-container">
@@ -98,7 +98,7 @@
     <div class="modal" id="modal-zoom">
         <img id="img-zoom">
         <div class="modal-actions">
-            <button class="btn-act btn-print" onclick="reimprimirAtual()">IMPRIMIR</button>
+            <button class="btn-act btn-print" onclick="reimprimirAtual()">IMPRIMIR AGORA</button>
             <button class="btn-act btn-delete" onclick="excluirFotoAtual()">EXCLUIR</button>
             <button class="btn-act" onclick="fecharModal()">FECHAR</button>
         </div>
@@ -119,8 +119,8 @@
     const DPI = 300 / 25.4; 
     const SPECS = {
         tradicional: { mmW: 150, mmH: 100, fW: 150, fH: 100, fX: 0, fY: 0, slots: 1 },
-        // AJUSTE: fX e fY definem onde a foto começa. Gap é o pulo entre fotos.
-        tirinha: { mmW: 50, mmH: 150, fW: 42.5, fH: 28.5, fX: 3.8, fY: 5.5, gap: 36.5, slots: 3 }
+        // Calibrado conforme image_db48f2.jpg
+        tirinha: { mmW: 50, mmH: 150, fW: 41.5, fH: 27.5, fX: 4.25, fY: 6.2, gap: 36.8, slots: 3 }
     };
 
     async function atualizar() {
@@ -139,19 +139,18 @@
             if (document.getElementById('formato-saida').value === 'tirinha') {
                 for (let i = 0; i < fotosJpg.length; i += 3) {
                     const grupo = fotosJpg.slice(i, i + 3);
-                    const masterKey = grupo[0].key;
-
-                    if (!chavesLocais.has(masterKey) && grupo.length === 3) {
-                        const urlsGrupo = grupo.map(f => `${API}/photo/${encodeURIComponent(f.key)}`);
-                        const imgFinal = await gerarComposicao(urlsGrupo, urlMoldura);
-                        
-                        todasFotos.push({ key: masterKey, url: imgFinal, id: Math.floor(i/3) + 1 });
-                        chavesLocais.add(masterKey);
-                        
-                        if (!processadas.has(masterKey)) {
-                            processadas.add(masterKey);
-                            localStorage.setItem('pp_print_history', JSON.stringify([...processadas]));
-                            addToPrintQueue(imgFinal);
+                    if (grupo.length === 3) {
+                        const masterKey = grupo[0].key;
+                        if (!chavesLocais.has(masterKey)) {
+                            const urlsGrupo = grupo.map(f => `${API}/photo/${encodeURIComponent(f.key)}`);
+                            const imgFinal = await gerarComposicao(urlsGrupo, urlMoldura);
+                            todasFotos.push({ key: masterKey, url: imgFinal, id: Math.floor(i/3) + 1 });
+                            chavesLocais.add(masterKey);
+                            if (!processadas.has(masterKey)) {
+                                processadas.add(masterKey);
+                                localStorage.setItem('pp_print_history', JSON.stringify([...processadas]));
+                                addToPrintQueue(imgFinal);
+                            }
                         }
                     }
                 }
@@ -181,6 +180,8 @@
         
         canvas.width = s.mmW * DPI;
         canvas.height = s.mmH * DPI;
+
+        // Fundo branco limpo
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0,0, canvas.width, canvas.height);
 
@@ -194,44 +195,61 @@
             molduraUrl ? load(molduraUrl) : null
         ]);
 
-        const w = s.fW * DPI;
-        const h = s.fH * DPI;
+        const fW_px = s.fW * DPI;
+        const fH_px = s.fH * DPI;
 
-        // DESENHAR FOTOS PRIMEIRO
+        // Desenhar fotos com máscara de recorte (Clipping)
         imgsFotos.forEach((img, i) => {
             if (i < s.slots) {
-                const yPos = (s.fY * DPI) + (i * s.gap * DPI);
-                drawImageCover(ctx, img, s.fX * DPI, yPos, w, h);
+                const fX_px = s.fX * DPI;
+                const fY_px = (s.fY * DPI) + (i * s.gap * DPI);
+
+                ctx.save(); // Salva estado atual
+                
+                // CRIA A MÁSCARA EXATA DO QUADRADO
+                ctx.beginPath();
+                ctx.rect(fX_px, fY_px, fW_px, fH_px);
+                ctx.clip(); // Tudo que for desenhado agora só aparece dentro desse rect
+
+                // Desenha a foto centralizada
+                const r = img.width / img.height;
+                const targetR = fW_px / fH_px;
+                let drawW, drawH, drawX, drawY;
+
+                if (r > targetR) {
+                    drawH = fH_px;
+                    drawW = fH_px * r;
+                    drawX = fX_px - (drawW - fW_px) / 2;
+                    drawY = fY_px;
+                } else {
+                    drawW = fW_px;
+                    drawH = fW_px / r;
+                    drawX = fX_px;
+                    drawY = fY_px - (drawH - fH_px) / 2;
+                }
+
+                ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                ctx.restore(); // Remove a máscara para a próxima foto
             }
         });
 
-        // DESENHAR MOLDURA POR CIMA (Para que as bordas da moldura cubram as fotos)
-        if (imgM) ctx.drawImage(imgM, 0, 0, canvas.width, canvas.height);
-        
-        return canvas.toDataURL("image/jpeg", 0.90);
-    }
-
-    function drawImageCover(ctx, img, x, y, w, h) {
-        const r = img.width / img.height;
-        const targetR = w / h;
-        let sx, sy, sw, sh;
-        if (r > targetR) {
-            sw = img.height * targetR; sh = img.height;
-            sx = (img.width - sw) / 2; sy = 0;
-        } else {
-            sw = img.width; sh = img.width / targetR;
-            sx = 0; sy = (img.height - sh) / 2;
+        // Desenhar moldura por cima (como se fosse um vidro transparente)
+        if (imgM) {
+            ctx.drawImage(imgM, 0, 0, canvas.width, canvas.height);
         }
-        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+        
+        return canvas.toDataURL("image/jpeg", 0.95);
     }
 
     function render() {
-        document.getElementById('grid-fotos').innerHTML = todasFotos.slice().reverse().map(f => `
+        const grid = document.getElementById('grid-fotos');
+        const html = todasFotos.slice().reverse().map(f => `
             <div class="card" onclick="abrirZoom('${f.url}', '${f.key}')">
                 <span class="badge">#${f.id}</span>
                 <img src="${f.url}">
             </div>
         `).join('');
+        grid.innerHTML = html;
     }
 
     function addToPrintQueue(src) {
@@ -248,8 +266,8 @@
         
         setTimeout(() => {
             window.print();
-            setTimeout(processQueue, 2000); 
-        }, 1000);
+            setTimeout(processQueue, 3000); 
+        }, 1200);
     }
 
     function abrirZoom(url, key) {
@@ -268,21 +286,21 @@
     }
 
     async function excluirFotoAtual() {
-        if(confirm("Deseja apagar esta foto?")) {
+        if(confirm("Excluir foto do servidor?")) {
             await fetch(`${API}/photo?key=${encodeURIComponent(fotoAbertaKey)}`, { method: 'DELETE' });
             location.reload();
         }
     }
 
     async function limparTudo() {
-        if(confirm("APAGAR TUDO?")) {
+        if(confirm("LIMPAR TODA A GALERIA?")) {
             await fetch(`${API}/photo?key=all`, { method: 'DELETE' });
             localStorage.removeItem('pp_print_history');
             location.reload();
         }
     }
 
-    setInterval(atualizar, 7000);
+    setInterval(atualizar, 6000);
     atualizar();
 </script>
 </body>
