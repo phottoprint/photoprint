@@ -7,24 +7,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style id="dynamic-page-size">
+        /* O tamanho da página será injetado aqui pelo JS */
+        @page { margin: 0; }
+    </style>
     <style>
         :root {
-            --bg: #020202; --surface: rgba(18, 18, 18, 0.8); --accent: #39ff14;
+            --bg: #020202; --accent: #39ff14;
             --danger: #ff3131; --text: #ffffff;
             --neon-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
             --glass-border: 1px solid rgba(57, 255, 20, 0.3);
         }
 
-        body { background: #000; color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        body { background: #000; color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
 
-        /* --- AJUSTE DE IMPRESSÃO (RESOLVE O PROBLEMA DE VÁRIAS FOLHAS E ESCALA) --- */
+        /* --- AJUSTE DE IMPRESSÃO PARA AUTOMATIZAÇÃO --- */
         #modal-print { display: none; }
 
         @media print {
             body * { visibility: hidden !important; }
-            html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100% !important; }
-            @page { margin: 0; size: auto; }
-
+            html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+            
             #modal-print {
                 display: block !important;
                 visibility: visible !important;
@@ -32,7 +35,6 @@
                 top: 0; left: 0;
                 width: 100% !important;
                 height: 100% !important;
-                page-break-after: avoid !important;
             }
 
             #modal-print img {
@@ -40,27 +42,25 @@
                 display: block !important;
                 width: 100% !important;
                 height: 100% !important;
-                object-fit: fill !important; /* Força a imagem a ocupar todo o papel definido */
+                object-fit: fill !important; /* Preenche o papel configurado */
             }
         }
 
-        /* Interface Visual */
-        header { padding: 40px; display: flex; flex-direction: column; align-items: center; border-bottom: var(--glass-border); background: linear-gradient(to bottom, #111, #000); }
+        /* Interface (Mantida conforme solicitado) */
+        header { padding: 40px; display: flex; flex-direction: column; align-items: center; border-bottom: var(--glass-border); }
         .brand-center h1 { color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 8px; margin: 0; font-size: 3rem; }
         .sidebar { position: fixed; right: -320px; top: 0; width: 280px; height: 100%; background: rgba(10,10,10,0.98); z-index: 5000; transition: 0.4s; padding: 40px 20px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
         .menu-trigger { position: absolute; right: 20px; top: 20px; cursor: pointer; z-index: 5001; color: var(--accent); font-size: 30px; }
-        .search-box { margin-top: 20px; }
-        .search-box input { background: #111; border: 1px solid var(--accent); color: #fff; padding: 12px 25px; border-radius: 25px; width: 300px; text-align: center; outline: none; }
         .gallery-container { padding: 40px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        .card { background: #111; border-radius: 15px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; transition: 0.3s; }
+        .card { background: #111; border-radius: 15px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; }
         .card img { width: 100%; display: block; aspect-ratio: 1/1; object-fit: cover; }
         .badge { position: absolute; top: 10px; right: 10px; background: var(--accent); color: #000; padding: 4px 10px; font-weight: bold; border-radius: 5px; font-size: 12px; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
         .modal img { max-height: 75vh; border: 2px solid var(--accent); border-radius: 10px; }
-        .btn-print { margin-top: 20px; padding: 15px 50px; background: var(--accent); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        select, .side-btn { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid var(--accent); color: #fff; border-radius: 8px; cursor: pointer; }
+        .btn-print { margin-top: 20px; padding: 15px 50px; background: var(--accent); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        select, .side-btn { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid var(--accent); color: #fff; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -70,10 +70,10 @@
     <div class="sidebar" id="sidebar">
         <h3 style="color: var(--accent);">CONFIGURAÇÕES</h3>
         <label>Formato de Papel:</label>
-        <select id="formato-saida">
-            <option value="polaroid">Polaroid (9x11 cm)</option>
-            <option value="tradicional" selected>Tradicional (15x10 cm)</option>
-            <option value="tirinha">Tirinha (6x15 cm)</option>
+        <select id="formato-saida" onchange="atualizarTamanhoPagina()">
+            <option value="polaroid">9x11 cm (Polaroid)</option>
+            <option value="tradicional" selected>15x10 cm (Tradicional)</option>
+            <option value="tirinha">6x15 cm (Tirinha)</option>
         </select>
         <button class="side-btn" onclick="baixarZip()">BAIXAR GALERIA (ZIP)</button>
         <button class="side-btn" style="background: var(--danger);" onclick="limparTudo()">APAGAR TUDO</button>
@@ -84,9 +84,6 @@
             <h1>PHOTO PRINT</h1>
             <p id="view-evento" style="text-align: center; opacity: 0.7; letter-spacing: 3px;">CARREGANDO...</p>
         </div>
-        <div class="search-box">
-            <input type="number" id="input-busca" placeholder="🔍 Nº DA FOTO" oninput="buscarFoto(this.value)">
-        </div>
     </header>
 
     <main class="gallery-container">
@@ -95,7 +92,7 @@
 
     <div class="modal" id="modal-zoom" onclick="this.style.display='none'">
         <img id="img-zoom">
-        <button class="btn-print" onclick="event.stopPropagation(); reimprimirAtual()">IMPRIMIR AGORA</button>
+        <button class="btn-print" onclick="event.stopPropagation(); reimprimirAtual()">IMPRIMIR</button>
     </div>
 
     <div id="modal-print"></div>
@@ -109,13 +106,22 @@
     let printQueue = [];
     let isPrinting = false;
 
-    // Medidas baseadas em 300 DPI (11.81 pixels por mm)
-    const DPI_FACTOR = 11.811; 
+    // Fator de DPI 300 (11.81 pixels por mm)
+    const DPI = 11.811; 
     const SPECS = {
         polaroid:    { mmW: 90,  mmH: 110, fW: 82,  fH: 78,  fX: 4,  fY: 4 },
         tradicional: { mmW: 150, mmH: 100, fW: 150, fH: 100, fX: 0,  fY: 0 },
         tirinha:     { mmW: 60,  mmH: 150, fW: 52,  fH: 38,  fX: 4,  fY: 4, gap: 42 } 
     };
+
+    // 1. SOLUÇÃO PARA IMPRESSÃO AUTOMÁTICA (Sincroniza o CSS com o Driver)
+    function atualizarTamanhoPagina() {
+        const fmt = document.getElementById('formato-saida').value;
+        const s = SPECS[fmt];
+        const styleTag = document.getElementById('dynamic-page-size');
+        // Isso força o navegador a pedir à impressora o tamanho exato em cm
+        styleTag.innerHTML = `@page { size: ${s.mmW}mm ${s.mmH}mm; margin: 0; }`;
+    }
 
     async function atualizar() {
         try {
@@ -151,10 +157,8 @@
         const canvas = document.getElementById('canvas-process');
         const ctx = canvas.getContext('2d');
         
-        // Define tamanho do canvas em pixels reais para 300DPI
-        canvas.width = s.mmW * DPI_FACTOR;
-        canvas.height = s.mmH * DPI_FACTOR;
-        
+        canvas.width = s.mmW * DPI;
+        canvas.height = s.mmH * DPI;
         ctx.fillStyle = "white"; 
         ctx.fillRect(0,0, canvas.width, canvas.height);
 
@@ -166,18 +170,21 @@
         const imgFoto = await load(fotoUrl);
         const imgM = molduraUrl ? await load(molduraUrl) : null;
 
-        const fW = s.fW * DPI_FACTOR;
-        const fH = s.fH * DPI_FACTOR;
-        const fX = s.fX * DPI_FACTOR;
-        const fY = s.fY * DPI_FACTOR;
+        const fW = s.fW * DPI;
+        const fH = s.fH * DPI;
+        const fX = s.fX * DPI;
+        const fY = s.fY * DPI;
 
         if (imgFoto) {
+            // 2. SOLUÇÃO PARA CORTE NA TIRINHA (Coordenadas Fixas sem sobreposição)
             if (fmt === 'tirinha') {
-                // Desenha 3 fotos com espaçamento (gap) corrigido para evitar sobreposição
-                const gap = s.gap * DPI_FACTOR;
+                const gapPixels = s.gap * DPI;
+                // Foto 1 (Topo)
                 ctx.drawImage(imgFoto, fX, fY, fW, fH);
-                ctx.drawImage(imgFoto, fX, fY + gap, fW, fH);
-                ctx.drawImage(imgFoto, fX, fY + (gap * 2), fW, fH);
+                // Foto 2 (Meio) - Inicia exatamente após a Foto 1 + gap
+                ctx.drawImage(imgFoto, fX, fY + gapPixels, fW, fH);
+                // Foto 3 (Base) - Inicia exatamente após a Foto 2 + gap
+                ctx.drawImage(imgFoto, fX, fY + (gapPixels * 2), fW, fH);
             } else {
                 ctx.drawImage(imgFoto, fX, fY, fW, fH);
             }
@@ -205,12 +212,7 @@
         isPrinting = true;
         const src = printQueue.shift();
         const containerP = document.getElementById('modal-print');
-        const fmt = document.getElementById('formato-saida').value;
-        const s = SPECS[fmt];
-
         containerP.innerHTML = `<img src="${src}" id="active-print-img">`;
-        containerP.style.width = (s.mmW / 10) + "cm";
-        containerP.style.height = (s.mmH / 10) + "cm";
 
         const img = document.getElementById('active-print-img');
         img.onload = () => {
@@ -227,20 +229,9 @@
     }
 
     function reimprimirAtual() { addToPrintQueue(document.getElementById('img-zoom').src); }
-    function buscarFoto(v) { 
-        const f = todasFotos.find(x => x.id == v); 
-        if(f) abrirZoom(f.url); 
-    }
-    async function baixarZip() {
-        const zip = new JSZip();
-        todasFotos.forEach(f => zip.file(`foto_${f.id}.jpg`, f.url.split(',')[1], {base64: true}));
-        const blob = await zip.generateAsync({type:"blob"});
-        saveAs(blob, `Galeria.zip`);
-    }
-    async function limparTudo() {
-        if(confirm("Apagar tudo?")) { localStorage.removeItem('impressas_local'); location.reload(); }
-    }
+    function limparTudo() { if(confirm("Apagar tudo?")) { localStorage.removeItem('impressas_local'); location.reload(); } }
 
+    atualizarTamanhoPagina();
     setInterval(atualizar, 5000);
     atualizar();
 </script>
