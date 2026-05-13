@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - Panel v2.8</title>
+    <title>PHOTO PRINT - Panel v2.9</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -52,7 +52,7 @@
         .badge { position: absolute; top: 8px; right: 8px; background: var(--accent); color: #000; padding: 2px 8px; font-weight: bold; border-radius: 4px; font-size: 11px; }
 
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
-        .modal img { max-height: 80vh; border: 2px solid var(--accent); }
+        .modal img { max-height: 75vh; border: 2px solid var(--accent); }
         .modal-actions { display: flex; gap: 15px; margin-top: 20px; }
         
         .btn-act { padding: 12px 30px; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; }
@@ -75,13 +75,14 @@
             <option value="tirinha" selected>Tirinha (3 fotos)</option>
             <option value="tradicional">Tradicional (1 foto)</option>
         </select>
-        <button onclick="limparTudo()" style="width:100%; padding:10px; background:var(--danger); color:#fff;">LIMPAR TUDO (FORÇAR RECARGA)</button>
+        <button onclick="baixarZip()" style="width:100%; padding:10px; margin-bottom:10px;">ZIP DA GALERIA</button>
+        <button onclick="limparTudo()" style="width:100%; padding:10px; background:var(--danger); color:#fff;">LIMPAR TUDO</button>
     </div>
 
     <header>
         <div class="brand-center">
             <h1>PHOTO PRINT</h1>
-            <div class="version-tag">AVATAR & PHOTO SYSTEM v2.8</div>
+            <div class="version-tag">AVATAR & PHOTO SYSTEM v2.9</div>
             <p id="view-evento" style="opacity: 0.6;">CARREGANDO...</p>
         </div>
         <div class="search-container">
@@ -97,7 +98,7 @@
     <div class="modal" id="modal-zoom">
         <img id="img-zoom">
         <div class="modal-actions">
-            <button class="btn-act btn-print" onclick="reimprimirAtual()">IMPRIMIR</button>
+            <button class="btn-act btn-print" onclick="reimprimirAtual()">IMPRIMIR AGORA</button>
             <button class="btn-act btn-delete" onclick="excluirFotoAtual()">EXCLUIR</button>
             <button class="btn-act" onclick="fecharModal()">FECHAR</button>
         </div>
@@ -116,10 +117,9 @@
     let fotoAbertaKey = null;
 
     const DPI = 300 / 25.4; 
-    // AJUSTE AGRESSIVO: fW e fH ligeiramente menores para garantir que fiquem dentro do branco
     const SPECS = {
         tradicional: { mmW: 150, mmH: 100, fW: 150, fH: 100, fX: 0, fY: 0, slots: 1 },
-        tirinha: { mmW: 50, mmH: 150, fW: 41.0, fH: 27.2, fX: 4.5, fY: 6.5, gap: 36.8, slots: 3 }
+        tirinha:     { mmW: 50,  mmH: 150, fW: 41.5, fH: 27.5, fX: 4.25, fY: 6.2, gap: 36.8, slots: 3 }
     };
 
     async function atualizar() {
@@ -139,12 +139,14 @@
                 for (let i = 0; i < fotosJpg.length; i += 3) {
                     const grupo = fotosJpg.slice(i, i + 3);
                     if (grupo.length === 3) {
-                        const masterKey = "T-" + grupo[0].key; // Prefixo para diferenciar no cache
+                        const masterKey = grupo[0].key; 
                         if (!chavesLocais.has(masterKey)) {
                             const urlsGrupo = grupo.map(f => `${API}/photo/${encodeURIComponent(f.key)}`);
                             const imgFinal = await gerarComposicao(urlsGrupo, urlMoldura);
-                            todasFotos.push({ key: grupo[0].key, url: imgFinal, id: Math.floor(i/3) + 1 });
+                            
+                            todasFotos.push({ key: masterKey, url: imgFinal, id: Math.floor(i/3) + 1 });
                             chavesLocais.add(masterKey);
+                            
                             if (!processadas.has(masterKey)) {
                                 processadas.add(masterKey);
                                 localStorage.setItem('pp_print_history', JSON.stringify([...processadas]));
@@ -159,6 +161,11 @@
                         const imgFinal = await gerarComposicao([`${API}/photo/${encodeURIComponent(f.key)}`], urlMoldura);
                         todasFotos.push({ key: f.key, url: imgFinal, id: fotosJpg.indexOf(f) + 1 });
                         chavesLocais.add(f.key);
+                        if (!processadas.has(f.key)) {
+                            processadas.add(f.key);
+                            localStorage.setItem('pp_print_history', JSON.stringify([...processadas]));
+                            addToPrintQueue(imgFinal);
+                        }
                     }
                 }
             }
@@ -174,18 +181,12 @@
         
         canvas.width = s.mmW * DPI;
         canvas.height = s.mmH * DPI;
-
-        // Reset total do canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0,0, canvas.width, canvas.height);
 
-        const load = (url) => new Promise((res, rej) => {
-            const i = new Image(); 
-            i.crossOrigin = "anonymous";
-            i.onload = () => res(i); 
-            i.onerror = rej;
-            i.src = url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now(); // ANTI-CACHE
+        const load = (url) => new Promise(res => {
+            const i = new Image(); i.crossOrigin = "anonymous";
+            i.onload = () => res(i); i.src = url;
         });
 
         const [imgsFotos, imgM] = await Promise.all([
@@ -202,27 +203,20 @@
                 const fY_px = (s.fY * DPI) + (i * s.gap * DPI);
 
                 ctx.save();
-                
-                // MÁSCARA RÍGIDA
                 ctx.beginPath();
                 ctx.rect(fX_px, fY_px, fW_px, fH_px);
                 ctx.clip();
 
-                // CÁLCULO DE PROPORÇÃO COVER
-                const imgRatio = img.width / img.height;
-                const slotRatio = fW_px / fH_px;
-                
+                const r = img.width / img.height;
+                const targetR = fW_px / fH_px;
                 let dW, dH, dX, dY;
-                if (imgRatio > slotRatio) {
-                    dH = fH_px;
-                    dW = fH_px * imgRatio;
-                    dX = fX_px - (dW - fW_px) / 2;
-                    dY = fY_px;
+
+                if (r > targetR) {
+                    dH = fH_px; dW = fH_px * r;
+                    dX = fX_px - (dW - fW_px) / 2; dY = fY_px;
                 } else {
-                    dW = fW_px;
-                    dH = fW_px / imgRatio;
-                    dX = fX_px;
-                    dY = fY_px - (dH - fH_px) / 2;
+                    dW = fW_px; dH = fW_px / r;
+                    dX = fX_px; dY = fY_px - (dH - fH_px) / 2;
                 }
 
                 ctx.drawImage(img, dX, dY, dW, dH);
@@ -230,9 +224,7 @@
             }
         });
 
-        // MOLDURA SEMPRE POR ÚLTIMO
         if (imgM) ctx.drawImage(imgM, 0, 0, canvas.width, canvas.height);
-        
         return canvas.toDataURL("image/jpeg", 0.95);
     }
 
@@ -275,20 +267,30 @@
     }
 
     async function excluirFotoAtual() {
-        if(confirm("Excluir?")) {
+        if(confirm("Deseja apagar esta foto do servidor?")) {
             await fetch(`${API}/photo?key=${encodeURIComponent(fotoAbertaKey)}`, { method: 'DELETE' });
             location.reload();
         }
     }
 
-    function limparTudo() {
-        if(confirm("Isso limpará o cache do navegador e as fotos da tela. Continuar?")) {
+    async function limparTudo() {
+        if(confirm("APAGAR TODA A GALERIA?")) {
+            await fetch(`${API}/photo?key=all`, { method: 'DELETE' });
             localStorage.removeItem('pp_print_history');
             location.reload();
         }
     }
 
-    setInterval(atualizar, 8000);
+    async function baixarZip() {
+        const zip = new JSZip();
+        for(let f of todasFotos) {
+            const blob = await (await fetch(f.url)).blob();
+            zip.file(`foto_${f.id}.jpg`, blob);
+        }
+        zip.generateAsync({type:"blob"}).then(c => saveAs(c, "galeria.zip"));
+    }
+
+    setInterval(atualizar, 5000);
     atualizar();
 </script>
 </body>
