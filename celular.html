@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOTO PRINT - MOBILE v1.4</title>
+    <title>PHOTO PRINT - MOBILE v1.5</title>
     <style>
         :root { --neon: #39ff14; --error: #ff0000; }
         body { 
@@ -41,19 +41,14 @@
         #num-count { font-size: 100px; font-weight: 900; color: white; line-height: 1; display: block; text-shadow: 0 0 30px var(--neon); }
         #sub-count { font-size: 14px; font-weight: bold; color: var(--neon); text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; }
 
-        /* Botão de Orientação */
-        #orientacao-toggle {
-            pointer-events: auto;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--neon);
-            color: var(--neon);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: bold;
-            margin-top: 10px;
-            display: none; /* Só aparece no 10x15 */
+        /* Aviso de Rotação */
+        #rotate-warning {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 5000; color: var(--neon); text-align: center; padding: 30px;
         }
+        .icon-rotate { width: 80px; height: 80px; margin-bottom: 20px; animation: rotateAnim 2s infinite; }
+        @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
 
         #cam-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; align-items: center; justify-content: space-evenly; width: 100%; pointer-events: auto; }
         .cam-btn { width: 65px; height: 65px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -68,6 +63,12 @@
 </head>
 <body>
 
+    <div id="rotate-warning">
+        <svg class="icon-rotate" viewBox="0 0 24 24" fill="var(--neon)"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h2l-3.5 3.5-3.5-3.5h2c-.34-3.19-2.32-5.85-5.08-7.1l1.11-1.88M12.06 19c-1.38 0-2.61-.56-3.5-1.47l-1.41 1.41C8.36 20.15 10.09 21 12.06 21c3.97 0 7.32-2.8 8.16-6.5h-2.07c-.77 2.58-3.17 4.5-5.99 4.5M2.06 11h2c.34 3.19 2.32 5.85 5.08 7.1l-1.11 1.88C4.76 18.43 2.42 15.26 2.06 11.5M12.06 5c1.38 0 2.61.56 3.5 1.47l1.41-1.41C15.76 3.85 14.03 3 12.06 3 8.09 3 4.74 5.8 3.9 9.5h2.07C6.74 6.92 9.14 5 12.06 5Z"/></svg>
+        <h2 id="rotate-msg">GIRE O APARELHO</h2>
+        <p>Esta moldura exige o modo paisagem (horizontal).</p>
+    </div>
+
     <div id="offline-screen"><div class="mantencao-txt">SISTEMA EM MANUTENÇÃO</div></div>
     <div id="flash"></div>
     <div id="loader"><div class="spin"></div><p id="loader-text" style="color:var(--neon);margin-top:20px;font-weight:bold;">PROCESSANDO...</p></div>
@@ -79,7 +80,6 @@
                 <div id="info-topo">SINCRONIZANDO...</div>
                 <span id="num-count"></span>
                 <span id="sub-count">AGUARDANDO START</span>
-                <button id="orientacao-toggle" onclick="alternarOrientacao()">HORIZONTAL</button>
             </div>
 
             <div id="cam-controls">
@@ -113,33 +113,35 @@
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
         let ev = ""; let formatStr = ""; let frame = ""; let pics = []; 
         let stream = null; let currentFacingMode = "user"; 
-        let orientacao10x15 = "H"; // H = Horizontal, V = Vertical
+        let lockCam = false;
 
-        const SLOTS_TIRINHA = [
-            { y: 0.030, h: 0.254 },
-            { y: 0.296, h: 0.254 },
-            { y: 0.559, h: 0.254 }
-        ];
+        const SLOTS_TIRINHA = [{ y: 0.030, h: 0.254 }, { y: 0.296, h: 0.254 }, { y: 0.559, h: 0.254 }];
 
         const FORMATOS = {
             "TIRINHA": { w: 600, h: 1800, fotos: 3, key: "TIRINHA" },
             "POLAROID": { w: 1200, h: 1500, fotos: 1, key: "POLAROID" },
-            "10X15": { w: 1800, h: 1200, fotos: 1, key: "10X15" }
+            "10X15H": { w: 1800, h: 1200, fotos: 1, key: "10X15H" },
+            "10X15V": { w: 1200, h: 1800, fotos: 1, key: "10X15V" }
         };
-        let configAtual = FORMATOS["10X15"];
+        let configAtual = FORMATOS["10X15H"];
 
-        function alternarOrientacao() {
-            const btn = document.getElementById('orientacao-toggle');
-            if (orientacao10x15 === "H") {
-                orientacao10x15 = "V";
-                btn.innerText = "VERTICAL";
-                configAtual.w = 1200;
-                configAtual.h = 1800;
+        // Monitora a rotação
+        window.addEventListener("orientationchange", checkOrientation);
+        window.addEventListener("resize", checkOrientation);
+
+        function checkOrientation() {
+            if (document.getElementById('cam-container').style.display !== "block") return;
+            
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const warning = document.getElementById('rotate-warning');
+            
+            // Se for 10x15 Horizontal e o celular estiver em pé
+            if (configAtual.key === "10X15H" && !isLandscape) {
+                warning.style.display = "flex";
+                lockCam = true;
             } else {
-                orientacao10x15 = "H";
-                btn.innerText = "HORIZONTAL";
-                configAtual.w = 1800;
-                configAtual.h = 1200;
+                warning.style.display = "none";
+                lockCam = false;
             }
         }
 
@@ -149,18 +151,15 @@
                 const d = await r.json();
                 document.getElementById('offline-screen').style.display = (d.status === "OFFLINE") ? "flex" : "none";
                 ev = d.evento || "Geral";
-                formatStr = d.formato || "10X15 Standard";
+                formatStr = d.formato || "10X15H";
                 document.getElementById('nome-evento-capa').innerText = ev;
                 document.getElementById('info-topo').innerText = `${ev} | ${formatStr}`;
                 
-                let tipo = formatStr.toUpperCase().includes("TIRINHA") ? "TIRINHA" : formatStr.toUpperCase().includes("POLAROID") ? "POLAROID" : "10X15";
+                let tipo = formatStr.toUpperCase().includes("TIRINHA") ? "TIRINHA" : 
+                           formatStr.toUpperCase().includes("POLAROID") ? "POLAROID" : 
+                           formatStr.toUpperCase().includes("10X15V") ? "10X15V" : "10X15H";
                 
-                // Reinicia dimensões padrão ao trocar formato via painel
-                configAtual = JSON.parse(JSON.stringify(FORMATOS[tipo]));
-                
-                // Mostrar botão apenas no 10x15
-                document.getElementById('orientacao-toggle').style.display = (tipo === "10X15") ? "block" : "none";
-                
+                configAtual = FORMATOS[tipo];
                 await getFrame();
             } catch (e) {}
         }
@@ -193,20 +192,22 @@
             await sync();
             if (!frame) return alert("Moldura não encontrada!");
             document.getElementById('cam-container').style.display = "block";
+            checkOrientation();
             await startStream(currentFacingMode);
             document.getElementById('num-count').innerText = "";
             document.getElementById('sub-count').innerText = "CLIQUE PARA INICIAR";
-            document.getElementById('shutter-placeholder').innerHTML = '<div onclick="iniciarSequencia()" class="shutter-btn"></div>';
+            document.getElementById('shutter-placeholder').innerHTML = '<div id="shutter-btn" onclick="iniciarSequencia()" class="shutter-btn"></div>';
         }
 
         function voltarHome() {
             if (stream) stream.getTracks().forEach(t => t.stop());
             document.getElementById('cam-container').style.display = "none";
+            document.getElementById('rotate-warning').style.display = "none";
         }
 
         async function iniciarSequencia() {
+            if(lockCam) return;
             document.getElementById('shutter-placeholder').innerHTML = "";
-            document.getElementById('orientacao-toggle').style.display = "none";
             pics = [];
             for(let n=1; n<=configAtual.fotos; n++) {
                 document.getElementById('sub-count').innerText = `FOTO ${n} DE ${configAtual.fotos}`;
@@ -228,8 +229,7 @@
             cv.width = v.videoWidth; cv.height = v.videoHeight;
             if (currentFacingMode === "user") { ctx.translate(cv.width, 0); ctx.scale(-1, 1); }
             ctx.drawImage(v, 0, 0);
-            const img = new Image(); img.src = cv.toDataURL('image/jpeg', 0.9);
-            pics.push(img);
+            pics.push(cv.toDataURL('image/jpeg', 0.9));
         }
 
         function processarMontagem() {
@@ -242,40 +242,54 @@
                 ctx.fillStyle = "white"; ctx.fillRect(0,0,cv.width, cv.height);
 
                 if (configAtual.key === "TIRINHA") {
-                    pics.forEach((img, i) => {
-                        const s = SLOTS_TIRINHA[i];
-                        const dx = cv.width * 0.06; 
-                        const dw = cv.width * 0.88;
-                        const dy = cv.height * s.y;
-                        const dh = cv.height * s.h;
-                        ctx.save();
-                        ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
-                        const ratio = Math.max(dw / img.width, dh / img.height);
-                        ctx.drawImage(img, dx+(dw-img.width*ratio)/2, dy+(dh-img.height*ratio)/2, img.width*ratio, img.height*ratio);
-                        ctx.restore();
+                    let loadedCount = 0;
+                    pics.forEach((src, i) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const s = SLOTS_TIRINHA[i];
+                            const dx = cv.width * 0.06, dw = cv.width * 0.88;
+                            const dy = cv.height * s.y, dh = cv.height * s.h;
+                            ctx.save();
+                            ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
+                            const ratio = Math.max(dw / img.width, dh / img.height);
+                            ctx.drawImage(img, dx+(dw-img.width*ratio)/2, dy+(dh-img.height*ratio)/2, img.width*ratio, img.height*ratio);
+                            ctx.restore();
+                            loadedCount++;
+                            if(loadedCount === pics.length) {
+                                ctx.drawImage(m, 0, 0, cv.width, cv.height);
+                                exibirResultado(cv.toDataURL('image/jpeg', 0.95));
+                            }
+                        };
+                        img.src = src;
                     });
                 } else {
-                    const img = pics[0];
-                    const ratio = Math.max(cv.width / img.width, cv.height / img.height);
-                    ctx.drawImage(img, (cv.width - img.width*ratio)/2, (cv.height - img.height*ratio)/2, img.width*ratio, img.height*ratio);
+                    const img = new Image();
+                    img.onload = () => {
+                        const ratio = Math.max(cv.width / img.width, cv.height / img.height);
+                        ctx.drawImage(img, (cv.width - img.width*ratio)/2, (cv.height - img.height*ratio)/2, img.width*ratio, img.height*ratio);
+                        ctx.drawImage(m, 0, 0, cv.width, cv.height);
+                        exibirResultado(cv.toDataURL('image/jpeg', 0.95));
+                    };
+                    img.src = pics[0];
                 }
-                ctx.drawImage(m, 0, 0, cv.width, cv.height);
-                
-                document.getElementById('loader').innerHTML = `
-                    <img src="${cv.toDataURL('image/jpeg', 0.95)}" style="max-height:65vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
-                    <div style="margin-top:20px; display:flex; gap:10px;">
-                        <button class="btn-action" style="background:var(--neon); color:black;" onclick="enviar()">GERAR FOTO</button>
-                        <button class="btn-action" style="background:#333;color:white;" onclick="location.reload()">SAIR</button>
-                    </div>`;
             };
             m.src = frame + "?t=" + Date.now();
+        }
+
+        function exibirResultado(dataUrl) {
+            document.getElementById('loader').innerHTML = `
+                <img src="${dataUrl}" style="max-height:65vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
+                <div style="margin-top:20px; display:flex; gap:10px;">
+                    <button class="btn-action" style="background:var(--neon); color:black;" onclick="enviar()">GERAR FOTO</button>
+                    <button class="btn-action" style="background:#333;color:white;" onclick="location.reload()">SAIR</button>
+                </div>`;
         }
 
         async function enviar() {
             document.getElementById('loader').innerHTML = `<div class="spin"></div><p style="color:var(--neon)">ENVIANDO PARA GALERIA...</p>`;
             document.getElementById('c-strip').toBlob(async b => {
                 const fd = new FormData();
-                fd.append('file', b, 'foto.jpg'); fd.append('evento', ev); fd.append('tipo', 'orientacao');
+                fd.append('file', b, 'foto.jpg'); fd.append('evento', ev); fd.append('tipo', 'foto');
                 try { await fetch(`${API}/upload`, { method: 'POST', body: fd }); location.reload(); } catch (e) { alert("Erro no envio!"); location.reload(); }
             }, 'image/jpeg', 0.95);
         }
