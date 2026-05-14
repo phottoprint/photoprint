@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - GALLERY v3.5</title>
+    <title>PHOTO PRINT - GALLERY v3.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -16,12 +16,42 @@
         }
         body { background: radial-gradient(circle at center, #0a1a05 0%, #000 100%); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         
-        /* PRINT CONFIG */
-        #modal-print { display: none !important; }
+        /* 
+           CORREÇÃO DE IMPRESSÃO (PATCH APLICADO) 
+           Garante que apenas a foto atual seja impressa em uma única folha
+        */
+        #modal-print { display: none; }
+
         @media print {
-            body * { display: none !important; }
-            #modal-print, #modal-print img { display: block !important; width: 100% !important; height: auto !important; margin: 0 !important; }
-            @page { margin: 0; }
+            @page {
+                margin: 0;
+                size: auto;
+            }
+            body * {
+                visibility: hidden; /* Esconde tudo da tela */
+                display: none !important;
+            }
+            #modal-print, #modal-print img {
+                display: flex !important;
+                visibility: visible; /* Torna apenas o container de impressão visível */
+            }
+            #modal-print {
+                position: absolute;
+                inset: 0;
+                width: 100vw;
+                height: 100vh;
+                justify-content: center;
+                align-items: center;
+                background: white !important;
+            }
+            #img-print {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                width: auto !important;
+                height: auto !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
         }
 
         header { padding: 50px 40px 30px; display: flex; flex-direction: column; align-items: center; }
@@ -37,7 +67,7 @@
         .card img { width: 100%; display: block; }
         .card .badge { position: absolute; top: 10px; right: 10px; background: var(--accent); color: #000; padding: 4px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
 
-        /* SIDEBAR ORIGINAL */
+        /* SIDEBAR */
         .sidebar { position: fixed; right: -350px; top: 0; width: 300px; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 5000; transition: 0.5s; padding: 120px 25px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
         .sidebar-btn { width: 100%; padding: 18px; margin-bottom: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 15px; font-weight: bold; }
@@ -81,7 +111,9 @@
         </div>
     </div>
 
+    <!-- Container de Impressão (Fica oculto na tela, mas é o único visível no papel) -->
     <div id="modal-print"><img id="img-print"></div>
+    
     <canvas id="canvas-process" style="display:none;"></canvas>
 
 <script>
@@ -92,13 +124,6 @@
     let printQueue = [];
     let isPrinting = false;
 
-    // Slots exatos conforme image_d97776.jpg
-    const SLOTS = [
-        { x: 0.08, y: 0.04, w: 0.84, h: 0.20 },
-        { x: 0.08, y: 0.26, w: 0.84, h: 0.20 },
-        { x: 0.08, y: 0.48, w: 0.84, h: 0.20 }
-    ];
-
     async function atualizar() {
         try {
             const resStatus = await fetch(`${API}/status?t=${Date.now()}`);
@@ -108,20 +133,14 @@
             const resF = await fetch(`${API}/list-photos?evento=${encodeURIComponent(eventoAtual)}&t=${Date.now()}`);
             const dados = await resF.json();
             
-            const molduraObj = dados.find(f => f.key.toLowerCase().endsWith('.png'));
-            const urlMoldura = molduraObj ? `${API}/photo/${encodeURIComponent(molduraObj.key)}` : "";
             const fotosJpg = dados.filter(f => !f.key.toLowerCase().endsWith('.png'));
 
-            // Processa as fotos assim que elas entram no sistema
             for (let i = 0; i < fotosJpg.length; i++) {
                 const f = fotosJpg[i];
                 if (!chavesLocais.has(f.key)) {
                     todasFotos.push({ id: todasFotos.length + 1, url: `${API}/photo/${encodeURIComponent(f.key)}`, key: f.key });
                     chavesLocais.add(f.key);
                     render();
-                    
-                    // Se for a galeria de visualização, você pode optar por imprimir automático aqui
-                    // addToPrintQueue(`${API}/photo/${encodeURIComponent(f.key)}`);
                 }
             }
         } catch(e) { console.error(e); }
@@ -185,6 +204,13 @@
             await fetch(`${API}/delete-all`, { method: 'DELETE' });
             location.reload();
         }
+    }
+
+    function executarBusca() {
+        const idBusca = document.getElementById('input-busca').value;
+        const foto = todasFotos.find(f => f.id == idBusca);
+        if(foto) abrirZoom(foto.url, foto.key);
+        else alert("Foto não encontrada!");
     }
 
     setInterval(atualizar, 5000);
