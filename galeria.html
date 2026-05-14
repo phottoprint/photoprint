@@ -3,291 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - Panel v2.9</title>
+    <title>PHOTO PRINT - CYBER ELITE GALLERY v3.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root {
-            --bg: #020202; --accent: #39ff14; --danger: #ff3131; --text: #ffffff;
-            --neon-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+            --bg: #020202; 
+            --surface: rgba(18, 18, 18, 0.8); 
+            --accent: #39ff14;
+            --danger: #ff3131; 
+            --text: #ffffff;
+            --neon-shadow: 0 0 15px rgba(57, 255, 20, 0.5), 0 0 30px rgba(57, 255, 20, 0.2);
             --glass-border: 1px solid rgba(57, 255, 20, 0.3);
         }
 
-        body { background: #000; color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
-
-        #modal-print { display: none; } 
-
-        @media print {
-            body * { visibility: hidden !important; }
-            html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-            #modal-print { 
-                display: block !important; 
-                visibility: visible !important;
-                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-                z-index: 9999;
-            }
-            #modal-print img { 
-                visibility: visible !important;
-                width: 100%; height: 100%; object-fit: contain;
-                display: block; 
-            }
-            @page { margin: 0; size: auto; }
+        body { 
+            background: radial-gradient(circle at center, #0a1a05 0%, #000 100%); 
+            color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; 
         }
 
-        header { padding: 40px; display: flex; flex-direction: column; align-items: center; border-bottom: var(--glass-border); background: linear-gradient(to bottom, #111, #000); }
-        .brand-center h1 { color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 8px; margin: 0; font-size: 3rem; }
-        .version-tag { font-size: 0.8rem; opacity: 0.5; letter-spacing: 2px; }
-        
-        .search-container { margin-top: 20px; display: flex; gap: 10px; }
-        .search-container input { background: #111; border: 1px solid var(--accent); color: #fff; padding: 12px; border-radius: 25px; width: 200px; outline: none; }
-        .search-btn { background: var(--accent); color: #000; border: none; padding: 12px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        /* --- CONFIGURAÇÃO DE IMPRESSÃO --- */
+        #modal-print { display: none !important; }
+        @media print {
+            body * { display: none !important; }
+            #modal-print, #modal-print img {
+                display: block !important; width: 100% !important; height: auto !important; margin: 0 !important;
+            }
+            @page { margin: 0; }
+        }
 
-        .gallery-container { padding: 40px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        header { padding: 50px 40px 30px; display: flex; flex-direction: column; align-items: center; }
+        .brand-center h1 { margin: 0; font-size: 56px; color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 10px; font-weight: 900; text-transform: uppercase; }
         
-        .card { background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #333; cursor: pointer; position: relative; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        .card img { width: 100%; display: block; }
-        .badge { position: absolute; top: 8px; right: 8px; background: var(--accent); color: #000; padding: 2px 8px; font-weight: bold; border-radius: 4px; font-size: 11px; }
+        .search-box { margin-top: 40px; display: flex; gap: 10px; justify-content: center; z-index: 10; }
+        .search-box input { background: rgba(255, 255, 255, 0.05); border: var(--glass-border); color: var(--text); padding: 15px 25px; border-radius: 12px; width: 250px; outline: none; font-size: 18px; }
+        .search-btn { background: var(--accent); color: #000; border: none; border-radius: 12px; padding: 0 30px; cursor: pointer; font-weight: 900; transition: 0.3s; }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; align-items: center; justify-content: center; flex-direction: column; }
-        .modal img { max-height: 75vh; border: 2px solid var(--accent); }
-        .modal-actions { display: flex; gap: 15px; margin-top: 20px; }
-        
-        .btn-act { padding: 12px 30px; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; }
-        .btn-print { background: var(--accent); color: #000; }
-        .btn-delete { background: var(--danger); color: #fff; }
+        .menu-trigger { position: absolute; right: 40px; top: 50px; cursor: pointer; z-index: 5001; }
+        .menu-trigger span { display: block; width: 35px; height: 3px; background: var(--accent); margin: 6px 0; box-shadow: var(--neon-shadow); }
 
-        .sidebar { position: fixed; right: -300px; top: 0; width: 260px; height: 100%; background: #0a0a0a; z-index: 5000; transition: 0.4s; padding: 30px; border-left: var(--glass-border); }
+        /* --- SIDEBAR LAYOUT ANTERIOR --- */
+        .sidebar { 
+            position: fixed; right: -350px; top: 0; width: 300px; height: 100%; 
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
+            z-index: 5000; transition: 0.5s ease; padding: 120px 25px; border-left: var(--glass-border);
+        }
         .sidebar.active { right: 0; }
-        .menu-trigger { position: absolute; right: 20px; top: 20px; cursor: pointer; z-index: 5001; color: var(--accent); font-size: 24px; }
+        .sidebar-btn { 
+            width: 100%; padding: 18px; margin-bottom: 20px; border-radius: 12px; 
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); 
+            color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 15px; font-weight: bold; transition: 0.4s;
+        }
+        .sidebar-btn:hover { background: rgba(57, 255, 20, 0.15); border-color: var(--accent); box-shadow: var(--neon-shadow); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 35px; padding: 0 60px 80px; }
+        .card { background: var(--surface); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.4s; position: relative; }
+        .card img { width: 100%; display: block; }
+        .card .badge { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); color: var(--accent); padding: 6px 12px; border-radius: 8px; font-size: 14px; border: 1px solid var(--accent); font-weight: 900; }
+
+        /* --- MODAL --- */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; flex-direction: column; align-items: center; justify-content: center; }
+        .modal img { max-width: 90%; max-height: 70vh; border: 4px solid var(--accent); border-radius: 20px; margin-bottom: 30px; }
+        .modal-controls { display: flex; gap: 20px; }
+        .btn-action { padding: 15px 40px; border-radius: 50px; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+        
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4999; display: none; }
+        .overlay.active { display: block; }
     </style>
 </head>
 <body>
 
-    <div class="menu-trigger" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="fas fa-cog"></i></div>
-
-    <div class="sidebar" id="sidebar">
-        <h3 style="color: var(--accent);">CONFIGURAÇÕES</h3>
-        <label>Layout:</label>
-        <select id="formato-saida" style="width: 100%; padding: 10px; margin-bottom: 20px;">
-            <option value="tirinha" selected>Tirinha (3 fotos)</option>
-            <option value="tradicional">Tradicional (1 foto)</option>
-        </select>
-        <button onclick="baixarZip()" style="width:100%; padding:10px; margin-bottom:10px;">ZIP DA GALERIA</button>
-        <button onclick="limparTudo()" style="width:100%; padding:10px; background:var(--danger); color:#fff;">LIMPAR TUDO</button>
-    </div>
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="menu-trigger" onclick="toggleSidebar()"><span></span><span></span><span></span></div>
 
     <header>
         <div class="brand-center">
             <h1>PHOTO PRINT</h1>
-            <div class="version-tag">AVATAR & PHOTO SYSTEM v2.9</div>
-            <p id="view-evento" style="opacity: 0.6;">CARREGANDO...</p>
-        </div>
-        <div class="search-container">
-            <input type="number" id="input-busca" placeholder="Nº da Foto">
-            <button class="search-btn" onclick="buscarBotao()">BUSCAR</button>
+            <div class="search-box">
+                <input type="number" id="input-busca" placeholder="Nº DA FOTO">
+                <button class="search-btn" onclick="executarBusca()">BUSCAR</button>
+            </div>
         </div>
     </header>
 
-    <main class="gallery-container">
-        <div id="grid-fotos" class="grid"></div>
-    </main>
+    <div class="sidebar" id="sidebar">
+        <button class="sidebar-btn" onclick="baixarZip()"><i class="fa-solid fa-download"></i> Baixar Galeria</button>
+        <button class="sidebar-btn" style="color:var(--danger)" onclick="limparTudo()"><i class="fa-solid fa-trash"></i> Apagar Servidor</button>
+    </div>
+
+    <main class="grid" id="grid-fotos"></main>
 
     <div class="modal" id="modal-zoom">
-        <img id="img-zoom">
-        <div class="modal-actions">
-            <button class="btn-act btn-print" onclick="reimprimirAtual()">IMPRIMIR AGORA</button>
-            <button class="btn-act btn-delete" onclick="excluirFotoAtual()">EXCLUIR</button>
-            <button class="btn-act" onclick="fecharModal()">FECHAR</button>
+        <img id="img-zoom" src="">
+        <div class="modal-controls">
+            <button class="btn-action" style="background:#333; color:#fff" onclick="fecharZoom()">Voltar</button>
+            <button class="btn-action" style="background:var(--accent); color:#000" onclick="reimprimirAtual()">Reimprimir</button>
+            <button class="btn-action" style="background:var(--danger); color:#fff" id="btn-excluir-foto">Excluir</button>
         </div>
     </div>
 
-    <div id="modal-print"></div>
+    <div id="modal-print"><img id="img-print"></div>
     <canvas id="canvas-process" style="display:none;"></canvas>
 
 <script>
     const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-    let todasFotos = [];
+    let todasFotosProcessadas = [];
     let chavesLocais = new Set();
-    let processadas = new Set(JSON.parse(localStorage.getItem('pp_print_history') || '[]'));
+    let eventoAnterior = "";
     let printQueue = [];
     let isPrinting = false;
-    let fotoAbertaKey = null;
 
-    const DPI = 300 / 25.4; 
-    const SPECS = {
-        tradicional: { mmW: 150, mmH: 100, fW: 150, fH: 100, fX: 0, fY: 0, slots: 1 },
-        tirinha:     { mmW: 50,  mmH: 150, fW: 41.5, fH: 27.5, fX: 4.25, fY: 6.2, gap: 36.8, slots: 3 }
-    };
+    const SLOTS = [
+        { x: 0.08, y: 0.04, w: 0.84, h: 0.20 },
+        { x: 0.08, y: 0.26, w: 0.84, h: 0.20 },
+        { x: 0.08, y: 0.48, w: 0.84, h: 0.20 }
+    ];
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
 
     async function atualizar() {
         try {
             const resStatus = await fetch(`${API}/status?t=${Date.now()}`);
             const config = await resStatus.json();
-            document.getElementById('view-evento').innerText = config.evento.toUpperCase();
+            const eventoAtivo = config.evento || "Geral";
 
-            const resF = await fetch(`${API}/list-photos?evento=${encodeURIComponent(config.evento)}&t=${Date.now()}`);
+            const resF = await fetch(`${API}/list-photos?evento=${encodeURIComponent(eventoAtivo)}&t=${Date.now()}`);
             const dados = await resF.json();
             
             const molduraObj = dados.find(f => f.key.toLowerCase().endsWith('.png'));
             const urlMoldura = molduraObj ? `${API}/photo/${encodeURIComponent(molduraObj.key)}` : "";
             const fotosJpg = dados.filter(f => !f.key.toLowerCase().endsWith('.png'));
 
-            if (document.getElementById('formato-saida').value === 'tirinha') {
-                for (let i = 0; i < fotosJpg.length; i += 3) {
-                    const grupo = fotosJpg.slice(i, i + 3);
-                    if (grupo.length === 3) {
-                        const masterKey = grupo[0].key; 
-                        if (!chavesLocais.has(masterKey)) {
-                            const urlsGrupo = grupo.map(f => `${API}/photo/${encodeURIComponent(f.key)}`);
-                            const imgFinal = await gerarComposicao(urlsGrupo, urlMoldura);
-                            
-                            todasFotos.push({ key: masterKey, url: imgFinal, id: Math.floor(i/3) + 1 });
-                            chavesLocais.add(masterKey);
-                            
-                            if (!processadas.has(masterKey)) {
-                                processadas.add(masterKey);
-                                localStorage.setItem('pp_print_history', JSON.stringify([...processadas]));
-                                addToPrintQueue(imgFinal);
-                            }
-                        }
-                    }
-                }
-            } else {
-                for (const f of fotosJpg) {
-                    if (!chavesLocais.has(f.key)) {
-                        const imgFinal = await gerarComposicao([`${API}/photo/${encodeURIComponent(f.key)}`], urlMoldura);
-                        todasFotos.push({ key: f.key, url: imgFinal, id: fotosJpg.indexOf(f) + 1 });
-                        chavesLocais.add(f.key);
-                        if (!processadas.has(f.key)) {
-                            processadas.add(f.key);
-                            localStorage.setItem('pp_print_history', JSON.stringify([...processadas]));
-                            addToPrintQueue(imgFinal);
-                        }
+            // Processa em grupos de 3, ou fotos individuais se houver menos que 3
+            for (let i = 0; i < fotosJpg.length; i++) {
+                const f = fotosJpg[i];
+                if (!chavesLocais.has(f.key)) {
+                    // Tenta pegar o grupo de 3 se disponível
+                    let grupo = fotosJpg.slice(i - (i % 3), i - (i % 3) + 3);
+                    const urls = grupo.map(img => `${API}/photo/${encodeURIComponent(img.key)}`);
+                    
+                    const imgFinal = await processarComMoldura(urls, urlMoldura);
+                    
+                    todasFotosProcessadas.push({
+                        id: Math.floor(i/3) + 1,
+                        url: imgFinal,
+                        key: f.key,
+                        allKeys: grupo.map(g => g.key)
+                    });
+                    
+                    chavesLocais.add(f.key);
+                    render();
+                    
+                    // Só manda imprimir quando completa a tirinha (3 fotos)
+                    if (grupo.length === 3 && i % 3 === 2) {
+                        addToPrintQueue(imgFinal);
                     }
                 }
             }
-            render();
-        } catch(e) { console.error("Erro sync:", e); }
+        } catch(e) { console.error(e); }
     }
 
-    async function gerarComposicao(urlsFotos, molduraUrl) {
-        const fmt = document.getElementById('formato-saida').value;
-        const s = SPECS[fmt];
+    async function processarComMoldura(urls, molduraUrl) {
         const canvas = document.getElementById('canvas-process');
         const ctx = canvas.getContext('2d');
-        
-        canvas.width = s.mmW * DPI;
-        canvas.height = s.mmH * DPI;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0,0, canvas.width, canvas.height);
-
-        const load = (url) => new Promise(res => {
+        const load = (src) => new Promise(res => {
             const i = new Image(); i.crossOrigin = "anonymous";
-            i.onload = () => res(i); i.src = url;
+            i.onload = () => res(i); i.src = src;
         });
 
-        const [imgsFotos, imgM] = await Promise.all([
-            Promise.all(urlsFotos.map(url => load(url))),
-            molduraUrl ? load(molduraUrl) : null
-        ]);
+        const imgM = await load(molduraUrl);
+        if(!imgM) return urls[0];
 
-        const fW_px = s.fW * DPI;
-        const fH_px = s.fH * DPI;
+        canvas.width = imgM.width; canvas.height = imgM.height;
 
-        imgsFotos.forEach((img, i) => {
-            if (i < s.slots) {
-                const fX_px = s.fX * DPI;
-                const fY_px = (s.fY * DPI) + (i * s.gap * DPI);
-
+        for (let idx = 0; idx < urls.length; idx++) {
+            const imgFoto = await load(urls[idx]);
+            if (imgFoto && SLOTS[idx]) {
+                const s = SLOTS[idx];
+                const dx = s.x * canvas.width, dy = s.y * canvas.height;
+                const dw = s.w * canvas.width, dh = s.h * canvas.height;
                 ctx.save();
-                ctx.beginPath();
-                ctx.rect(fX_px, fY_px, fW_px, fH_px);
-                ctx.clip();
-
-                const r = img.width / img.height;
-                const targetR = fW_px / fH_px;
-                let dW, dH, dX, dY;
-
-                if (r > targetR) {
-                    dH = fH_px; dW = fH_px * r;
-                    dX = fX_px - (dW - fW_px) / 2; dY = fY_px;
-                } else {
-                    dW = fW_px; dH = fW_px / r;
-                    dX = fX_px; dY = fY_px - (dH - fH_px) / 2;
-                }
-
-                ctx.drawImage(img, dX, dY, dW, dH);
+                ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
+                const ratio = Math.max(dw / imgFoto.width, dh / imgFoto.height);
+                ctx.drawImage(imgFoto, dx + (dw - imgFoto.width * ratio) / 2, dy + (dh - imgFoto.height * ratio) / 2, imgFoto.width * ratio, imgFoto.height * ratio);
                 ctx.restore();
             }
-        });
-
-        if (imgM) ctx.drawImage(imgM, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL("image/jpeg", 0.95);
+        }
+        ctx.drawImage(imgM, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL("image/jpeg", 0.9);
     }
 
     function render() {
-        document.getElementById('grid-fotos').innerHTML = todasFotos.slice().reverse().map(f => `
-            <div class="card" onclick="abrirZoom('${f.url}', '${f.key}')">
-                <span class="badge">#${f.id}</span>
-                <img src="${f.url}">
+        const grid = document.getElementById('grid-fotos');
+        // Filtra para mostrar apenas um card por tirinha (a cada 3 fotos)
+        const tirinhasUnicas = todasFotosProcessadas.filter((f, index) => index % 3 === 0);
+        
+        grid.innerHTML = tirinhasUnicas.slice().reverse().map(t => `
+            <div class="card" onclick="abrirZoom('${t.url}', '${t.allKeys.join(',')}')">
+                <span class="badge">#${t.id}</span>
+                <img src="${t.url}">
             </div>
         `).join('');
     }
+
+    function abrirZoom(url, keys) {
+        document.getElementById('img-zoom').src = url;
+        document.getElementById('modal-zoom').style.display = 'flex';
+        document.getElementById('btn-excluir-foto').onclick = () => excluirFoto(keys.split(','));
+    }
+
+    function fecharZoom() { document.getElementById('modal-zoom').style.display = 'none'; }
 
     function addToPrintQueue(src) {
         printQueue.push(src);
         if (!isPrinting) processQueue();
     }
 
-    async function processQueue() {
+    function processQueue() {
         if (printQueue.length === 0) { isPrinting = false; return; }
         isPrinting = true;
-        const src = printQueue.shift();
-        const container = document.getElementById('modal-print');
-        container.innerHTML = `<img src="${src}">`;
-        setTimeout(() => { window.print(); setTimeout(processQueue, 3000); }, 1200);
+        const imgP = document.getElementById('img-print');
+        imgP.onload = () => {
+            window.focus();
+            setTimeout(() => { window.print(); setTimeout(processQueue, 3000); }, 1000);
+        };
+        imgP.src = printQueue.shift();
     }
 
-    function abrirZoom(url, key) {
-        fotoAbertaKey = key;
-        document.getElementById('img-zoom').src = url;
-        document.getElementById('modal-zoom').style.display = 'flex';
-    }
-
-    function fecharModal() { document.getElementById('modal-zoom').style.display = 'none'; }
     function reimprimirAtual() { addToPrintQueue(document.getElementById('img-zoom').src); }
-    
-    function buscarBotao() {
-        const val = document.getElementById('input-busca').value;
-        const achou = todasFotos.find(f => f.id == val);
-        if(achou) abrirZoom(achou.url, achou.key);
-    }
 
-    async function excluirFotoAtual() {
-        if(confirm("Deseja apagar esta foto do servidor?")) {
-            await fetch(`${API}/photo?key=${encodeURIComponent(fotoAbertaKey)}`, { method: 'DELETE' });
-            location.reload();
-        }
-    }
-
-    async function limparTudo() {
-        if(confirm("APAGAR TODA A GALERIA?")) {
-            await fetch(`${API}/photo?key=all`, { method: 'DELETE' });
-            localStorage.removeItem('pp_print_history');
+    async function excluirFoto(keys) {
+        if(confirm("Excluir esta tirinha?")) {
+            for(const k of keys) {
+                await fetch(`${API}/delete-photo?key=${encodeURIComponent(k)}`, { method: 'DELETE' });
+            }
             location.reload();
         }
     }
 
     async function baixarZip() {
         const zip = new JSZip();
-        for(let f of todasFotos) {
-            const blob = await (await fetch(f.url)).blob();
-            zip.file(`foto_${f.id}.jpg`, blob);
+        todasFotosProcessadas.forEach((f, i) => { if(i%3===0) zip.file(`tirinha_${f.id}.jpg`, f.url.split(',')[1], {base64: true}); });
+        const blob = await zip.generateAsync({type:"blob"});
+        saveAs(blob, "Galeria.zip");
+    }
+
+    async function limparTudo() {
+        if(confirm("Apagar TUDO?") && prompt("Senha:") === "123") {
+            await fetch(`${API}/delete-all`, { method: 'DELETE' });
+            location.reload();
         }
-        zip.generateAsync({type:"blob"}).then(c => saveAs(c, "galeria.zip"));
+    }
+
+    function executarBusca() {
+        const val = document.getElementById('input-busca').value;
+        const t = todasFotosProcessadas.find(f => f.id == val);
+        if(t) abrirZoom(t.url, t.allKeys.join(','));
     }
 
     setInterval(atualizar, 5000);
