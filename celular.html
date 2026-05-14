@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOTO PRINT - MOBILE</title>
+    <title>PHOTO PRINT - MOBILE v3.5</title>
     <style>
         :root { --neon: #39ff14; --error: #ff0000; }
         body { 
@@ -55,7 +55,7 @@
         .shutter-btn { width: 90px; height: 90px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; box-shadow: 0 0 25px var(--neon); }
 
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 2000; }
-        #loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .spin { width: 60px; height: 60px; border: 5px solid rgba(57, 255, 20, 0.1); border-top-color: var(--neon); border-radius: 50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
         .btn-action { padding: 15px 35px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; }
@@ -113,6 +113,14 @@
             "POLAROID": { w: 1200, h: 1500, fotos: 1, landscape: false, key: "POLAROID" },
             "10X15": { w: 1800, h: 1200, fotos: 1, landscape: true, key: "10X15" }
         };
+        
+        // Slots precisos para a moldura de tirinha (ajustados para image_d97776.jpg)
+        const SLOTS_TIRINHA = [
+            { x: 0.08, y: 0.04, w: 0.84, h: 0.20 },
+            { x: 0.08, y: 0.26, w: 0.84, h: 0.20 },
+            { x: 0.08, y: 0.48, w: 0.84, h: 0.20 }
+        ];
+
         let configAtual = FORMATOS["10X15"];
 
         async function sync() {
@@ -224,18 +232,50 @@
             document.getElementById('loader').style.display = "flex";
             const cv = document.getElementById('c-strip'), ctx = cv.getContext('2d'), m = new Image();
             m.crossOrigin = "anonymous";
+            
             m.onload = () => {
                 cv.width = configAtual.w; cv.height = configAtual.h;
-                ctx.fillStyle = "white"; ctx.fillRect(0,0,cv.width, cv.height);
-                const hPart = cv.height / total;
-                pics.forEach((img, i) => {
-                    const s = Math.max(cv.width/img.width, hPart/img.height);
-                    const w = img.width*s, h = img.height*s;
-                    ctx.drawImage(img, (cv.width-w)/2, (i*hPart)+(hPart-h)/2, w, h);
-                });
+                
+                // Fundo Branco
+                ctx.fillStyle = "white"; 
+                ctx.fillRect(0,0,cv.width, cv.height);
+
+                if (configAtual.key === "TIRINHA") {
+                    // Lógica corrigida para os slots brancos do print
+                    pics.forEach((img, i) => {
+                        const s = SLOTS_TIRINHA[i];
+                        if(!s) return;
+
+                        const dx = s.x * cv.width;
+                        const dy = s.y * cv.height;
+                        const dw = s.w * cv.width;
+                        const dh = s.h * cv.height;
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(dx, dy, dw, dh);
+                        ctx.clip(); // Corta para não vazar da moldura
+
+                        const ratio = Math.max(dw / img.width, dh / img.height);
+                        const x = dx + (dw - img.width * ratio) / 2;
+                        const y = dy + (dh - img.height * ratio) / 2;
+                        
+                        ctx.drawImage(img, x, y, img.width * ratio, img.height * ratio);
+                        ctx.restore();
+                    });
+                } else {
+                    // Lógica padrão para Polaroid ou 10x15 (Foto Única preenchendo fundo)
+                    const img = pics[0];
+                    const ratio = Math.max(cv.width / img.width, cv.height / img.height);
+                    const w = img.width * ratio, h = img.height * ratio;
+                    ctx.drawImage(img, (cv.width - w) / 2, (cv.height - h) / 2, w, h);
+                }
+
+                // Moldura .png desenhada por cima de tudo
                 ctx.drawImage(m, 0, 0, cv.width, cv.height);
+                
                 document.getElementById('loader').innerHTML = `
-                    <img src="${cv.toDataURL('image/jpeg')}" style="max-height:60vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
+                    <img src="${cv.toDataURL('image/jpeg', 0.9)}" style="max-height:60vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
                     <div style="margin-top:25px; display:flex; gap:10px;">
                         <button class="btn-action" style="background:var(--neon); color:black;" onclick="enviar()">GERAR FOTO</button>
                         <button class="btn-action" style="background:#333;color:white;" onclick="location.reload()">SAIR</button>
@@ -271,7 +311,7 @@
                     alert("Erro ao enviar. Tente novamente.");
                     location.reload();
                 }
-            }, 'image/jpeg');
+            }, 'image/jpeg', 0.9);
         }
 
         window.addEventListener('resize', checkOrientation);
