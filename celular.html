@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOTO PRINT - MOBILE v1.6</title>
+    <title>PHOTO PRINT - MOBILE v1.7</title>
     <style>
         :root { --neon: #39ff14; --error: #ff0000; }
         body { 
@@ -13,56 +13,43 @@
             display: flex; flex-direction: column; 
         }
         
+        /* Telas de Bloqueio e Loader */
         #offline-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; }
-        .mantencao-txt { color: var(--error); font-size: 28px; font-weight: 900; text-shadow: 0 0 15px var(--error); }
+        #rotate-warning { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5000; color: var(--neon); }
+        #loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #flash { position: fixed; inset: 0; background: white; display: none; z-index: 2000; }
+        
+        .spin { width: 60px; height: 60px; border: 5px solid rgba(57, 255, 20, 0.1); border-top-color: var(--neon); border-radius: 50%; animation: s 1s linear infinite; }
+        @keyframes s { to { transform: rotate(360deg); } }
+        .icon-rotate { width: 80px; height: 80px; margin-bottom: 20px; animation: rotateAnim 2s infinite; }
+        @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
 
+        /* Header Principal */
         .header { margin-top: 40px; z-index: 10; border-left: 4px solid var(--neon); padding-left: 20px; align-self: flex-start; margin-left: 30px; text-align: left; }
         .brand-title { font-size: 38px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 5px; margin: 0; text-transform: uppercase; }
         .subtitle { color: white; font-size: 14px; letter-spacing: 3px; margin-top: 5px; opacity: 0.7; font-weight: bold; text-transform: uppercase; }
         #nome-evento-capa { font-size: 22px; font-weight: bold; color: var(--neon); text-transform: uppercase; margin: 20px 0; min-height: 25px; }
 
-        /* Estilo dos Botões de Seleção na Home */
+        /* Botões da Home */
         .selection-group { display: none; flex-direction: column; gap: 15px; align-items: center; }
-        .btn-select { 
-            background: black; border: 2px solid var(--neon); color: var(--neon); 
-            padding: 15px 40px; font-weight: 900; text-transform: uppercase; 
-            letter-spacing: 2px; border-radius: 50px; cursor: pointer;
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); width: 220px;
-        }
-        .btn-select:active { background: var(--neon); color: black; }
+        .btn-select { background: black; border: 2px solid var(--neon); color: var(--neon); padding: 15px 40px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; border-radius: 50px; cursor: pointer; width: 220px; }
+        .btn-eye { width: 150px; height: 150px; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--neon); }
 
+        /* Container da Câmera */
         #cam-container { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
         video { width: 100%; height: 100%; object-fit: cover; }
         .mirror { transform: scaleX(-1); }
         
         #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; pointer-events: none; }
-        .topo-grupo { 
-            background: rgba(0,0,0,0.8); 
-            border: 1px solid var(--neon); 
-            padding: 15px 30px; 
-            border-radius: 15px; 
-            width: 85%; 
-            max-width: 450px;
-            pointer-events: none;
-        }
+        .topo-grupo { background: rgba(0,0,0,0.8); border: 1px solid var(--neon); padding: 15px 30px; border-radius: 15px; width: 85%; max-width: 450px; pointer-events: none; }
+        #info-topo { font-size: 12px; font-weight: 900; color: var(--neon); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        #num-count { font-size: 100px; font-weight: 900; color: white; line-height: 1; display: block; text-shadow: 0 0 30px var(--neon); }
+        #sub-count { font-size: 14px; font-weight: bold; color: var(--neon); text-transform: uppercase; letter-spacing: 2px; }
 
-        #num-count { font-size: 100px; font-weight: 900; color: white; text-shadow: 0 0 30px var(--neon); }
-        #sub-count { font-size: 14px; font-weight: bold; color: var(--neon); text-transform: uppercase; }
-
-        #rotate-warning {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 5000; color: var(--neon); text-align: center;
-        }
-        .icon-rotate { width: 80px; height: 80px; margin-bottom: 20px; animation: rotateAnim 2s infinite; }
-        @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
-
-        #cam-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; align-items: center; justify-content: space-evenly; pointer-events: auto; }
+        /* Controles da Câmera */
+        #cam-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; align-items: center; justify-content: space-evenly; width: 100%; pointer-events: auto; }
+        .cam-btn { width: 65px; height: 65px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .shutter-btn { width: 90px; height: 90px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; box-shadow: 0 0 25px var(--neon); }
-        
-        #loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
-        .spin { width: 60px; height: 60px; border: 5px solid rgba(57, 255, 20, 0.1); border-top-color: var(--neon); border-radius: 50%; animation: s 1s linear infinite; }
-        @keyframes s { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -74,17 +61,31 @@
     </div>
 
     <div id="offline-screen"><div class="mantencao-txt">SISTEMA EM MANUTENÇÃO</div></div>
+    <div id="flash"></div>
     <div id="loader"><div class="spin"></div><p id="loader-text" style="color:var(--neon);margin-top:20px;font-weight:bold;">PROCESSANDO...</p></div>
 
     <div id="cam-container">
         <video id="v" autoplay playsinline muted></video>
         <div id="overlay">
             <div class="topo-grupo">
+                <div id="info-topo">CARREGANDO...</div>
                 <span id="num-count"></span>
                 <span id="sub-count">AGUARDANDO START</span>
             </div>
+
             <div id="cam-controls">
-                <div class="shutter-btn" onclick="iniciarSequencia()"></div>
+                <!-- Voltar -->
+                <div class="cam-btn" onclick="voltarHome()">
+                    <svg viewBox="0 0 24 24" width="30" fill="var(--neon)"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+                </div>
+                <!-- Disparar -->
+                <div id="shutter-placeholder">
+                    <div class="shutter-btn" onclick="iniciarSequencia()"></div>
+                </div>
+                <!-- Trocar Câmera -->
+                <div class="cam-btn" onclick="switchCam()">
+                    <svg viewBox="0 0 24 24" width="32" fill="var(--neon)"><path d="M15.5,14L20.5,19L19.08,20.42L14.08,15.42L15.5,14M3,3.27L4.27,2L22,19.73L20.73,21L18.11,18.39C17.09,19.38 15.62,20 14,20H10V17H14C14.7,17 15.35,16.79 15.9,16.42L12,12.52V15L7,10L8.1,8.9L3,3.27M17,10V7H13V10.18L11,8.18V5H17V2L22,7L17,12V10Z" /></svg>
+                </div>
             </div>
         </div>
     </div>
@@ -92,14 +93,14 @@
     <div class="header">
         <h1 class="brand-title">Photo Print</h1>
         <div class="subtitle">colecionando momentos</div>
-        <div id="nome-evento-capa">SINCRONIZANDO...</div>
+        <div id="nome-evento-capa">...</div>
     </div>
 
     <div class="main-ui" style="flex-grow:1; display:flex; align-items:center; justify-content:center; padding-bottom:80px;">
-        <!-- Botão Único (Tirinha/Polaroid) -->
-        <div id="single-btn" onclick="ligar('PADRAO')" style="display:none; width:150px; height:150px; border-radius:50%; border:5px solid var(--neon); cursor:pointer;"></div>
+        <div id="single-btn" class="btn-eye" onclick="ligar('PADRAO')">
+            <div style="width:50px; height:50px; border-radius:50%; border:3px solid var(--neon);"></div>
+        </div>
         
-        <!-- Seleção Dual (10x15) -->
         <div id="dual-selection" class="selection-group">
             <button class="btn-select" onclick="ligar('10X15H')">Horizontal</button>
             <button class="btn-select" onclick="ligar('10X15V')">Vertical</button>
@@ -111,7 +112,7 @@
 
     <script>
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-        let ev = "", formatStr = "", frame = "", pics = [], stream = null;
+        let ev = "", formatStr = "", frame = "", pics = [], stream = null, facingMode = "user";
         let configAtual = null;
 
         const FORMATOS = {
@@ -131,7 +132,7 @@
                 
                 const is10x15 = formatStr.toUpperCase().includes("10X15");
                 document.getElementById('dual-selection').style.display = is10x15 ? "flex" : "none";
-                document.getElementById('single-btn').style.display = is10x15 ? "none" : "block";
+                document.getElementById('single-btn').style.display = is10x15 ? "none" : "flex";
 
                 await getFrame();
             } catch (e) { console.error(e); }
@@ -149,11 +150,27 @@
             const isLandscape = window.innerWidth > window.innerHeight;
             document.getElementById('rotate-warning').style.display = isLandscape ? "none" : "flex";
         }
-
         window.addEventListener("resize", checkOrientation);
 
+        async function startStream() {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                });
+                const v = document.getElementById('v');
+                v.srcObject = stream;
+                v.className = (facingMode === "user") ? "mirror" : "";
+            } catch (e) { alert("Câmera não disponível"); }
+        }
+
+        async function switchCam() {
+            facingMode = (facingMode === "user") ? "environment" : "user";
+            await startStream();
+        }
+
         async function ligar(modo) {
-            if (!frame) return alert("Aguarde o carregamento da moldura...");
+            if (!frame) return alert("Moldura não carregada!");
             
             if (modo === 'PADRAO') {
                 let tipo = formatStr.toUpperCase().includes("TIRINHA") ? "TIRINHA" : "POLAROID";
@@ -163,17 +180,24 @@
             }
 
             document.getElementById('cam-container').style.display = "block";
+            document.getElementById('info-topo').innerText = `${ev} | ${configAtual.key}`;
+            document.getElementById('num-count').innerText = "";
+            document.getElementById('sub-count').innerText = "CLIQUE PARA INICIAR";
+            
             checkOrientation();
+            await startStream();
+        }
 
-            stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } } 
-            });
-            document.getElementById('v').srcObject = stream;
+        function voltarHome() {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            document.getElementById('cam-container').style.display = "none";
+            document.getElementById('rotate-warning').style.display = "none";
         }
 
         async function iniciarSequencia() {
             if (configAtual.exigeH && window.innerWidth <= window.innerHeight) return;
             
+            document.getElementById('shutter-placeholder').style.visibility = "hidden";
             pics = [];
             for(let n=1; n<=configAtual.fotos; n++) {
                 document.getElementById('sub-count').innerText = `FOTO ${n} DE ${configAtual.fotos}`;
@@ -181,51 +205,88 @@
                     document.getElementById('num-count').innerText = i;
                     await new Promise(r => setTimeout(r, 1000));
                 }
+                document.getElementById('num-count').innerText = "SORRIA!";
                 snap();
+                await new Promise(r => setTimeout(r, 1000));
             }
             processar();
         }
 
         function snap() {
+            const f = document.getElementById('flash');
+            f.style.display = "block"; setTimeout(() => f.style.display = "none", 100);
             const v = document.getElementById('v'), cv = document.getElementById('c-snap'), ctx = cv.getContext('2d');
             cv.width = v.videoWidth; cv.height = v.videoHeight;
-            ctx.translate(cv.width, 0); ctx.scale(-1, 1);
+            if (facingMode === "user") { ctx.translate(cv.width, 0); ctx.scale(-1, 1); }
             ctx.drawImage(v, 0, 0);
             pics.push(cv.toDataURL('image/jpeg', 0.9));
         }
 
         function processar() {
-            if (stream) stream.getTracks().forEach(t => t.stop());
-            document.getElementById('cam-container').style.display = "none";
+            voltarHome();
             document.getElementById('loader').style.display = "flex";
-            
             const cv = document.getElementById('c-strip'), ctx = cv.getContext('2d'), m = new Image();
             m.crossOrigin = "anonymous";
             m.onload = () => {
                 cv.width = configAtual.w; cv.height = configAtual.h;
                 ctx.fillStyle = "white"; ctx.fillRect(0,0,cv.width, cv.height);
                 
-                const img = new Image();
-                img.onload = () => {
-                    const ratio = Math.max(cv.width / img.width, cv.height / img.height);
-                    ctx.drawImage(img, (cv.width - img.width*ratio)/2, (cv.height - img.height*ratio)/2, img.width*ratio, img.height*ratio);
-                    ctx.drawImage(m, 0, 0, cv.width, cv.height);
-                    exibir(cv.toDataURL('image/jpeg', 0.95));
-                };
-                img.src = pics[0];
+                if (configAtual.key === "TIRINHA") {
+                    // Lógica de 3 fotos (Slots)
+                    const slots = [{y:0.030, h:0.254}, {y:0.296, h:0.254}, {y:0.559, h:0.254}];
+                    let count = 0;
+                    pics.forEach((src, i) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const s = slots[i];
+                            const dx = cv.width * 0.06, dw = cv.width * 0.88;
+                            const dy = cv.height * s.y, dh = cv.height * s.h;
+                            ctx.save(); ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
+                            const r = Math.max(dw/img.width, dh/img.height);
+                            ctx.drawImage(img, dx+(dw-img.width*r)/2, dy+(dh-img.height*r)/2, img.width*r, img.height*r);
+                            ctx.restore();
+                            count++;
+                            if(count === 3) {
+                                ctx.drawImage(m, 0, 0, cv.width, cv.height);
+                                exibir(cv.toDataURL('image/jpeg', 0.95));
+                            }
+                        };
+                        img.src = src;
+                    });
+                } else {
+                    const img = new Image();
+                    img.onload = () => {
+                        const r = Math.max(cv.width/img.width, cv.height/img.height);
+                        ctx.drawImage(img, (cv.width-img.width*r)/2, (cv.height-img.height*r)/2, img.width*r, img.height*r);
+                        ctx.drawImage(m, 0, 0, cv.width, cv.height);
+                        exibir(cv.toDataURL('image/jpeg', 0.95));
+                    };
+                    img.src = pics[0];
+                }
             };
             m.src = frame + "?t=" + Date.now();
         }
 
         function exibir(url) {
             document.getElementById('loader').innerHTML = `
-                <img src="${url}" style="max-height:70vh; border:2px solid var(--neon);">
+                <img src="${url}" style="max-height:70vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
                 <div style="margin-top:20px; display:flex; gap:10px;">
-                    <button class="btn-select" style="width:auto" onclick="location.reload()">ENVIAR E SAIR</button>
+                    <button class="btn-select" style="width:auto" onclick="enviar()">ENVIAR E SAIR</button>
+                    <button class="btn-select" style="width:auto; background:#333;" onclick="location.reload()">CANCELAR</button>
                 </div>`;
         }
 
+        async function enviar() {
+            document.getElementById('loader').innerHTML = `<div class="spin"></div><p style="color:var(--neon)">ENVIANDO...</p>`;
+            document.getElementById('c-strip').toBlob(async b => {
+                const fd = new FormData();
+                fd.append('file', b, 'foto.jpg'); fd.append('evento', ev);
+                try { await fetch(`${API}/upload`, { method: 'POST', body: fd }); location.reload(); } catch (e) { alert("Erro!"); location.reload(); }
+            }, 'image/jpeg', 0.95);
+        }
+
         sync();
+        setInterval(sync, 15000);
     </script>
 </body>
 </html>
