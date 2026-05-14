@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOTO PRINT - MOBILE v1.2</title>
+    <title>PHOTO PRINT - MOBILE v1.3</title>
     <style>
         :root { --neon: #39ff14; --error: #ff0000; }
         body { 
@@ -102,11 +102,11 @@
         let ev = ""; let formatStr = ""; let frame = ""; let pics = []; 
         let stream = null; let currentFacingMode = "user"; 
         
-        // AJUSTE DE SLOTS 100% PRECISOS (Baseado no seu último print)
+        // AJUSTE DE SLOTS MILIMÉTRICOS (VERSÃO 1.3)
         const SLOTS_TIRINHA = [
-            { y: 0.033, h: 0.254 }, // Foto 1 - Topo
+            { y: 0.030, h: 0.254 }, // Foto 1 - Topo (Ajustado para 0.030)
             { y: 0.296, h: 0.254 }, // Foto 2 - Meio
-            { y: 0.561, h: 0.254 }  // Foto 3 - Baixo
+            { y: 0.559, h: 0.254 }  // Foto 3 - Baixo
         ];
 
         const FORMATOS = {
@@ -176,7 +176,7 @@
             pics = [];
             for(let n=1; n<=configAtual.fotos; n++) {
                 document.getElementById('sub-count').innerText = `PREPARE-SE: FOTO ${n} DE ${configAtual.fotos}`;
-                for(let i=5; i>0; i--) { // Contador de 5 segundos restaurado
+                for(let i=5; i>0; i--) {
                     document.getElementById('num-count').innerText = i;
                     await new Promise(r => setTimeout(r, 1000));
                 }
@@ -210,8 +210,9 @@
                 if (configAtual.key === "TIRINHA") {
                     pics.forEach((img, i) => {
                         const s = SLOTS_TIRINHA[i];
-                        const dx = cv.width * 0.07; // Largura um pouco maior
-                        const dw = cv.width * 0.86;
+                        // Ajustado dx e dw para preenchimento lateral total (conforme v1.3)
+                        const dx = cv.width * 0.06; 
+                        const dw = cv.width * 0.88;
                         const dy = cv.height * s.y;
                         const dh = cv.height * s.h;
 
@@ -231,7 +232,7 @@
                 ctx.drawImage(m, 0, 0, cv.width, cv.height);
                 
                 document.getElementById('loader').innerHTML = `
-                    <img src="${cv.toDataURL('image/jpeg', 0.9)}" style="max-height:65vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
+                    <img src="${cv.toDataURL('image/jpeg', 0.95)}" style="max-height:65vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
                     <div style="margin-top:20px; display:flex; gap:10px;">
                         <button class="btn-action" style="background:var(--neon); color:black;" onclick="enviar()">GERAR FOTO</button>
                         <button class="btn-action" style="background:#333;color:white;" onclick="location.reload()">SAIR</button>
