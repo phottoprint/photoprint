@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>AUTOGRAPH CAM - Terminal Totem v1.0</title>
+    <style>
+        :root { --neon: #39ff14; --dark: #000; }
+        body { 
+            margin: 0; background: #000; color: white; 
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; 
+            display: flex; flex-direction: column; height: 100vh;
+        }
+
+        /* Área do Vídeo */
+        #cam-preview {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; transform: scaleX(-1); /* Espelhado para o usuário */
+        }
+
+        /* Overlay de Interface */
+        #ui-overlay {
+            position: relative; z-index: 10; height: 100%;
+            display: flex; flex-direction: column; justify-content: space-between;
+            background: linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
+            pointer-events: none;
+        }
+
+        .header { padding: 30px; text-align: center; }
+        .event-name { 
+            font-size: 24px; font-weight: 900; color: var(--neon); 
+            text-transform: uppercase; letter-spacing: 5px; 
+            text-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+        }
+
+        /* Centro: Contador e Mensagens */
+        .center-display {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #counter { 
+            font-size: 250px; font-weight: 900; color: white; 
+            text-shadow: 0 0 50px var(--neon); display: none;
+        }
+        #status-msg { font-size: 30px; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; }
+
+        /* Rodapé: Botão Touch */
+        .footer { padding-bottom: 50px; display: flex; justify-content: center; pointer-events: auto; }
+        .btn-capture {
+            width: 180px; height: 180px; border-radius: 50%;
+            background: rgba(0,0,0,0.8); border: 8px solid var(--neon);
+            color: var(--neon); cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 30px var(--neon); transition: 0.3s;
+        }
+        .btn-capture:active { transform: scale(0.9); background: var(--neon); color: black; }
+        .btn-capture i { font-size: 60px; font-style: normal; font-weight: bold; }
+
+        /* Loader de Processamento */
+        #loader {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 100; display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .spinner {
+            width: 80px; height: 80px; border: 8px solid #222;
+            border-top: 8px solid var(--neon); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #flash { position: fixed; inset: 0; background: white; display: none; z-index: 50; }
+    </style>
+</head>
+<body>
+
+    <div id="flash"></div>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <div id="status-msg">Processando Foto...</div>
+    </div>
+
+    <video id="cam-preview" autoplay playsinline></video>
+
+    <div id="ui-overlay">
+        <div class="header">
+            <div id="event-display" class="event-name">CARREGANDO EVENTO...</div>
+            <div id="format-display" style="font-size: 12px; color: #aaa; margin-top: 5px;"></div>
+        </div>
+
+        <div class="center-display">
+            <div id="counter">5</div>
+        </div>
+
+        <div class="footer">
+            <div id="btn-main" class="btn-capture" onclick="startCapture()">
+                <i>START</i>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="c-snap" style="display:none"></canvas>
+    <canvas id="c-final" style="display:none"></canvas>
+
+    <script>
+        const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
+        let config = { evento: "", formato: "", molduraUrl: "" };
+        const video = document.getElementById('cam-preview');
+
+        // 1. Iniciar Câmera
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 1920, height: 1080 }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Erro ao acessar Webcam: " + err);
+            }
+        }
+
+        // 2. Sincronizar com o Painel
+        async function sync() {
+            try {
+                const r = await fetch(`${API}/status?t=${Date.now()}`);
+                const d = await r.json();
+                config.evento = d.evento || "Geral";
+                config.formato = d.formato || "10X15H";
+                
+                document.getElementById('event-display').innerText = config.evento;
+                document.getElementById('format-display').innerText = `MODO: ${config.formato}`;
+
+                // Busca a moldura
+                const r2 = await fetch(`${API}/list-photos?evento=${encodeURIComponent(config.evento)}`);
+                const files = await r2.json();
+                const frame = files.find(f => f.key.toLowerCase().endsWith('.png'));
+                if(frame) config.molduraUrl = `${API}/photo/${encodeURIComponent(frame.key)}`;
+            } catch(e) { console.error("Erro na sincronização"); }
+        }
+
+        // 3. Lógica de Captura
+        async function startCapture() {
+            if(!config.molduraUrl) return alert("ERRO: Moldura não encontrada para este evento!");
+
+            document.getElementById('btn-main').style.display = "none";
+            const counterEl = document.getElementById('counter');
+            counterEl.style.display = "block";
+
+            for(let i=5; i>0; i--) {
+                counterEl.innerText = i;
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
+            counterEl.style.display = "none";
+            takeSnap();
+        }
+
+        function takeSnap() {
+            // Flash visual
+            const flash = document.getElementById('flash');
+            flash.style.display = "block";
+            setTimeout(() => flash.style.display = "none", 100);
+
+            const canvas = document.getElementById('c-snap');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Desenha invertido (como o espelho)
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0);
+            
+            processFinalImage(canvas.toDataURL('image/jpeg', 0.95));
+        }
+
+        function processFinalImage(photoData) {
+            document.getElementById('loader').style.display = "flex";
+            
+            const finalCanvas = document.getElementById('c-final');
+            const ctx = finalCanvas.getContext('2d');
+            const imgPhoto = new Image();
+            const imgFrame = new Image();
+
+            imgFrame.crossOrigin = "anonymous";
+            imgFrame.onload = () => {
+                // Define tamanho baseado na moldura
+                finalCanvas.width = imgFrame.width;
+                finalCanvas.height = imgFrame.height;
+
+                imgPhoto.onload = () => {
+                    // Preenche a foto no fundo (ajustando proporção)
+                    const ratio = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
+                    const x = (finalCanvas.width - imgPhoto.width * ratio) / 2;
+                    const y = (finalCanvas.height - imgPhoto.height * ratio) / 2;
+                    
+                    ctx.drawImage(imgPhoto, x, y, imgPhoto.width * ratio, imgPhoto.height * ratio);
+                    ctx.drawImage(imgFrame, 0, 0); // Moldura por cima
+
+                    upload(finalCanvas);
+                };
+                imgPhoto.src = photoData;
+            };
+            imgFrame.src = config.molduraUrl + "?t=" + Date.now();
+        }
+
+        async function upload(canvas) {
+            canvas.toBlob(async (blob) => {
+                const fd = new FormData();
+                fd.append('file', blob, 'capture.jpg');
+                fd.append('evento', config.evento);
+
+                try {
+                    await fetch(`${API}/upload`, { method: 'POST', body: fd });
+                    // Sucesso!
+                    setTimeout(() => location.reload(), 2000);
+                } catch(e) {
+                    alert("Erro no upload!");
+                    location.reload();
+                }
+            }, 'image/jpeg', 0.90);
+        }
+
+        initCamera();
+        sync();
+        setInterval(sync, 20000); // Sincroniza a cada 20s
+    </script>
+</body>
+</html>
