@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - Master Panel</title>
+    <title>PHOTO PRINT - Master Panel v1.1</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { 
             --neon: #39ff14; 
@@ -14,137 +15,92 @@
         }
 
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--dark); 
             background: radial-gradient(circle at 50% -20%, #1a3a12 0%, #000 65%);
-            color: white; 
-            margin: 0; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            box-sizing: border-box; 
-            overflow: hidden; 
+            color: white; margin: 0; height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; 
         }
 
-        #tela-inicial { 
-            position: fixed; inset: 0; 
-            display: flex; align-items: center; justify-content: center; 
-            z-index: 1000; background: #000; flex-direction: column; 
-        }
-        .splash-header { text-align: center; margin-bottom: 60px; }
+        /* TELA INICIAL (SPLASH) */
+        #tela-inicial { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1000; background: #000; flex-direction: column; text-align: center; }
+        .splash-brand { font-size: clamp(40px, 10vw, 90px); font-weight: 900; color: var(--neon); letter-spacing: 15px; text-transform: uppercase; margin: 0; text-shadow: 0 0 20px var(--neon); }
+        /* Centralização do subtítulo conforme solicitado */
+        .splash-subtitle { font-size: 14px; letter-spacing: 8px; color: #666; text-transform: uppercase; margin-top: 10px; width: 100%; display: block; }
+
+        /* MODAL SENHA */
+        #modal-senha { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .pass-box { background: #0a0a0a; padding: 40px; border-radius: 24px; border: 1px solid var(--neon); text-align: center; width: 320px; }
+        .pass-box input { width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 1px solid #222; color: var(--neon); text-align: center; font-size: 32px; border-radius: 12px; outline: none; box-sizing: border-box; font-weight: 900; }
+
+        /* NAVEGAÇÃO E LAYOUT */
+        .top-nav { display: none; justify-content: space-between; align-items: center; padding: 15px 40px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.7); backdrop-filter: blur(15px); }
+        .internal-brand { font-size: 24px; font-weight: 900; color: var(--neon); letter-spacing: 4px; margin: 0; text-transform: uppercase; }
+        .internal-subtitle { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; font-weight: bold; margin-top: -2px; }
         
-        .splash-brand { 
-            font-size: clamp(40px, 10vw, 100px); font-weight: 900; color: var(--neon); 
-            letter-spacing: 20px; text-transform: uppercase; 
-            margin: 0; animation: glitch 3s infinite;
-            text-shadow: 0 0 20px var(--neon);
-        }
+        .main-layout { display: none; grid-template-columns: 1fr 1.3fr; gap: 25px; flex: 1; padding: 25px; min-height: 0; }
+        .card { background: var(--card); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; overflow: hidden; }
+        .card-header { padding: 15px 25px; background: rgba(57, 255, 20, 0.08); color: var(--neon); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+        .card-body { padding: 30px; flex: 1; overflow-y: auto; }
 
-        @keyframes glitch {
-            0% { transform: skew(0deg); }
-            2% { transform: skew(10deg); opacity: 0.8; }
-            4% { transform: skew(-10deg); opacity: 1; }
-            6% { transform: skew(0deg); }
-        }
-
-        .splash-subtitle { font-size: 16px; letter-spacing: 10px; color: #444; text-transform: uppercase; margin-top: -10px; }
-
-        #modal-senha { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 2000; align-items: center; justify-content: center; }
-        .pass-box { background: #0a0a0a; padding: 40px; border-radius: 20px; border: 1px solid var(--neon); text-align: center; width: 320px; box-shadow: 0 0 40px rgba(57, 255, 20, 0.2); }
-        .pass-box input { width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 1px solid #222; color: var(--neon); text-align: center; font-size: 28px; border-radius: 10px; outline: none; box-sizing: border-box;}
-
-        .top-nav { display: none; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
-        .internal-brand { font-size: 32px; font-weight: 900; color: var(--neon); letter-spacing: 5px; margin: 0; text-transform: uppercase; filter: drop-shadow(0 0 10px var(--neon)); }
-        
-        .main-layout { display: none; grid-template-columns: 1fr 1.2fr; gap: 30px; flex: 1; padding: 30px; min-height: 0; }
-        
-        .card { 
-            background: var(--card); 
-            backdrop-filter: blur(15px);
-            border-radius: 15px; 
-            border: 1px solid rgba(255,255,255,0.05); 
-            display: flex; flex-direction: column; overflow: hidden; 
-        }
-        .card-header { padding: 15px 20px; background: rgba(57, 255, 20, 0.1); color: var(--neon); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
-        .card-body { padding: 25px; flex: 1; overflow-y: auto; }
+        /* FORMULÁRIO */
+        .form-group { margin-bottom: 20px; }
+        label { font-size: 10px; color: var(--neon); font-weight: 900; text-transform: uppercase; display: block; margin-bottom: 8px; }
+        input[type="text"], input[type="date"], select { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #222; color: white; border-radius: 6px; outline: none; box-sizing: border-box; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
         .btn-neon-style { 
-            background: transparent; border: 1px solid var(--neon); color: white; 
-            padding: 12px 25px; border-radius: 4px; font-weight: 900; cursor: pointer; 
-            text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
-            position: relative; border-left: 5px solid var(--neon);
+            background: transparent; border: 1px solid var(--neon); color: white; padding: 14px; border-radius: 6px; font-weight: 900; cursor: pointer; 
+            text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; border-left: 5px solid var(--neon); display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-neon-style:hover { 
-            background: rgba(57, 255, 20, 0.1); 
-            transform: translateX(8px); 
-            box-shadow: -5px 0 20px rgba(57, 255, 20, 0.4);
-            color: var(--neon);
-        }
+        .btn-neon-style:hover { background: rgba(57, 255, 20, 0.1); transform: translateX(5px); }
+        .btn-neon-style.success { background: var(--neon); color: black; border-left: 5px solid white; }
 
-        .btn-full { width: 100%; margin-top: 10px; padding: 18px; }
+        /* LISTA DE EVENTOS */
+        .evento-item { background: rgba(255,255,255,0.02); border: 1px solid #1a1a1a; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .evento-item.ativo { border-left: 4px solid var(--neon); background: rgba(57, 255, 20, 0.05); }
 
-        input[type="text"], select { 
-            width: 100%; padding: 12px; background: rgba(0,0,0,0.6); 
-            border: 1px solid #222; color: white; border-radius: 4px; 
-            margin-top: 5px; outline: none; box-sizing: border-box;
-        }
-        input:focus { border-color: var(--neon); }
-
-        .evento-item { 
-            background: rgba(255,255,255,0.02); border: 1px solid #111; 
-            padding: 15px; border-radius: 8px; display: flex; 
-            justify-content: space-between; align-items: center; margin-bottom: 10px; 
-            transition: 0.3s;
-        }
-        .evento-item.ativo { border-left: 4px solid var(--neon); background: rgba(57, 255, 20, 0.08); box-shadow: 0 0 20px rgba(0,0,0,0.4); }
-
-        /* CORREÇÃO: SWITCH ARREDONDADO */
-        .status-container { display: flex; align-items: center; gap: 12px; padding: 8px 18px; border-radius: 30px; border: 1px solid #222; transition: 0.3s; }
-        .status-container.bg-on { border-color: var(--neon); box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); }
-        
-        .switch-mega { position: relative; display: inline-block; width: 60px; height: 30px; }
+        /* STATUS REDE */
+        .status-container { display: flex; align-items: center; gap: 12px; padding: 6px 15px; border-radius: 30px; border: 1px solid #333; }
+        .switch-mega { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch-mega input { opacity: 0; width: 0; height: 0; }
-        
-        .slider-mega { 
-            position: absolute; cursor: pointer; inset: 0; background: #222; transition: .4s; border-radius: 30px; 
-        }
-        .slider-mega:before { 
-            position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background: white; transition: .4s; border-radius: 50%; 
-        }
-        
+        .slider-mega { position: absolute; cursor: pointer; inset: 0; background: #222; transition: .4s; border-radius: 30px; }
+        .slider-mega:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background: #555; transition: .4s; border-radius: 50%; }
         input:checked + .slider-mega { background: var(--neon); }
-        input:checked + .slider-mega:before { transform: translateX(30px); background: #000; }
+        input:checked + .slider-mega:before { transform: translateX(24px); background: #000; }
 
-        .custom-file-upload { border: 1px dashed var(--neon); display: inline-block; padding: 12px; cursor: pointer; width: 100%; box-sizing: border-box; text-align: center; border-radius: 4px; color: var(--neon); font-size: 11px; font-weight: bold; margin-top: 5px; }
-        .preview-container { width: 100%; height: 100px; border: 1px solid #111; margin-top: 10px; display: flex; align-items: center; justify-content: center; background: #000; }
+        .custom-file-upload { border: 1px dashed var(--border); display: block; padding: 12px; cursor: pointer; text-align: center; border-radius: 6px; color: #555; font-size: 11px; font-weight: bold; }
+        .preview-img { max-width: 100%; max-height: 80px; margin-top: 10px; display: none; border: 1px solid #222; }
+        .version-tag { position: fixed; bottom: 15px; right: 20px; font-size: 10px; color: #333; font-weight: 900; }
     </style>
 </head>
 <body>
+
+    <div class="version-tag">v1.1</div>
 
     <div id="tela-inicial">
         <div class="splash-header">
             <h1 class="splash-brand">PHOTO PRINT</h1>
             <p class="splash-subtitle">Colecionando Momentos</p>
         </div>
-        <button class="btn-neon-style" style="padding: 25px 80px;" onclick="abrirModalSenha()">Acessar Terminal</button>
+        <button class="btn-neon-style" style="padding: 20px 60px; margin-top: 30px;" onclick="abrirModalSenha()">Acessar Terminal</button>
     </div>
 
     <div id="modal-senha">
         <div class="pass-box">
-            <div style="font-size: 10px; font-weight: 900; color: var(--neon); letter-spacing: 2px;">AUTENTICAÇÃO NECESSÁRIA</div>
-            <input type="password" id="input-pass" placeholder="****" maxlength="4" onkeydown="if(event.key === 'Enter') confirmarSenha()">
-            <button class="btn-neon-style" style="width:100%" onclick="confirmarSenha()">Confirmar</button>
-            <div style="margin-top: 20px; color: #444; font-size: 10px; cursor: pointer;" onclick="fecharModalSenha()">ABORTAR</div>
+            <div style="font-size: 9px; color: var(--neon); letter-spacing: 2px;">SECURITY PROTOCOL</div>
+            <input type="password" id="input-pass" placeholder="••••" maxlength="4" onkeydown="if(event.key === 'Enter') confirmarSenha()">
+            <button class="btn-neon-style" style="width:100%" onclick="confirmarSenha()">Autenticar</button>
+            <div style="margin-top: 20px; color: #333; font-size: 9px; cursor: pointer;" onclick="fecharModalSenha()">ABORTAR</div>
         </div>
     </div>
 
     <div class="top-nav" id="header">
         <div>
             <h2 class="internal-brand">PHOTO PRINT</h2>
-            <div style="font-size: 9px; letter-spacing: 3px; color: #555; text-transform: uppercase; font-weight: bold;">Master Control Panel</div>
+            <div class="internal-subtitle">colecionando momentos</div>
         </div>
-        <div class="status-container bg-off" id="status-box">
-            <span id="label-status" style="font-size: 10px; font-weight: 900; letter-spacing: 2px; color: var(--red);">OFFLINE</span>
+        <div class="status-container" id="status-box">
+            <span id="label-status" style="font-size: 9px; font-weight: 900; color: var(--red);">OFFLINE</span>
             <label class="switch-mega">
                 <input type="checkbox" id="server-status" onchange="salvarStatusRede()">
                 <span class="slider-mega"></span>
@@ -154,27 +110,23 @@
 
     <div class="main-layout" id="layout">
         <div class="card">
-            <div class="card-header">Diretrizes do Evento</div>
+            <div class="card-header" id="card-form-title">NOVO EVENTO</div>
             <div class="card-body">
                 <input type="hidden" id="edit-index" value="-1">
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size:10px; color:var(--neon); font-weight:bold; text-transform:uppercase;">Identificação</label>
-                    <input type="text" id="input-evento" placeholder="Nome do Evento">
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size:10px; color:var(--neon); font-weight:bold;">CONFIGURAÇÃO DE SAÍDA</label>
-                    <select id="select-formato"></select>
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size:10px; color:var(--neon); font-weight:bold;">MOLDURA (.PNG)</label>
-                    <label for="input-moldura" class="custom-file-upload">CARREGAR LAYER</label>
+                <div class="form-group"><label>Nome do Evento</label><input type="text" id="input-evento" placeholder="Ex: Casamento João e Maria"></div>
+                <div class="form-group"><label>Data do Evento</label><input type="date" id="input-data"></div>
+                <div class="form-group"><label>Configuração de Saída</label><select id="select-formato"></select></div>
+                <div class="form-group">
+                    <label>Moldura (.PNG)</label>
+                    <label for="input-moldura" class="custom-file-upload" id="label-file">CARREGAR LAYER PNG</label>
                     <input type="file" id="input-moldura" accept="image/png" style="display:none" onchange="previewMoldura(this)">
-                    <div class="preview-container"><img id="img-preview" style="max-width:100%; max-height:100%; display:none;"></div>
+                    <center><img id="img-preview" class="preview-img"></center>
                 </div>
-                <button class="btn-neon-style btn-full" onclick="salvarEvento()" id="btn-submit">Sincronizar Protocolo</button>
+                <button class="btn-neon-style" style="width:100%" onclick="salvarEvento()" id="btn-submit">
+                    <span id="btn-text">CRIAR EVENTO</span>
+                </button>
             </div>
         </div>
-
         <div class="card">
             <div class="card-header">Logs de Atividade</div>
             <div class="card-body" id="corpo-lista"></div>
@@ -185,79 +137,51 @@
     const API_URL = "https://photoprint-api.maxprimefotovideo.workers.dev";
     const SENHA_MESTRA = "1234";
     let eventos = JSON.parse(localStorage.getItem('eventos_db')) || [];
-    let formatos = ["10x15 Standard", "Tirinha 5x15", "Polaroid"];
+    let formatos = [
+        { label: "10x15 Vertical", value: "10X15V" },
+        { label: "10x15 Horizontal", value: "10X15H" },
+        { label: "Tirinha 5x15", value: "TIRINHA" },
+        { label: "Polaroid", value: "POLAROID" }
+    ];
 
-    function abrirModalSenha() { 
-        document.getElementById('modal-senha').style.display = 'flex'; 
-        document.getElementById('input-pass').focus(); 
-    }
-    
-    function fecharModalSenha() { 
-        document.getElementById('modal-senha').style.display = 'none'; 
-        document.getElementById('input-pass').value = ''; 
-    }
-    
-    function confirmarSenha() {
-        if(document.getElementById('input-pass').value === SENHA_MESTRA) { 
-            fecharModalSenha(); 
-            ativarPainel(); 
-        } else {
-            alert("Acesso Negado!");
-        }
-    }
+    function abrirModalSenha() { document.getElementById('modal-senha').style.display = 'flex'; document.getElementById('input-pass').focus(); }
+    function fecharModalSenha() { document.getElementById('modal-senha').style.display = 'none'; }
+    function confirmarSenha() { if(document.getElementById('input-pass').value === SENHA_MESTRA) { fecharModalSenha(); ativarPainel(); } else alert("Senha Incorreta!"); }
 
     function ativarPainel() {
         document.getElementById('tela-inicial').style.display = 'none';
         document.getElementById('header').style.display = 'flex';
         document.getElementById('layout').style.display = 'grid';
-        renderizarFormatos();
-        renderizarLista();
-        checarEventoAtivo(); 
+        renderizarFormatos(); renderizarLista(); checarEventoAtivo(); 
     }
+
+    function renderizarFormatos() { document.getElementById('select-formato').innerHTML = formatos.map(f => `<option value="${f.value}">${f.label}</option>`).join(''); }
 
     function previewMoldura(input) {
         if(input.files[0]) {
             const reader = new FileReader();
-            reader.onload = e => { const img = document.getElementById('img-preview'); img.src = e.target.result; img.style.display = 'block'; };
+            reader.onload = e => { 
+                const img = document.getElementById('img-preview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('label-file').innerText = input.files[0].name;
+            };
             reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function renderizarFormatos() {
-        document.getElementById('select-formato').innerHTML = formatos.map(f => `<option value="${f}">${f}</option>`).join('');
-    }
-
-    function checarEventoAtivo() {
-        const temAtivo = eventos.some(e => e.ativo);
-        const switchBtn = document.getElementById('server-status');
-        if(!temAtivo) {
-            switchBtn.checked = false;
-            switchBtn.disabled = true; 
-            atualizarUIStatus(false);
-            enviarStatusParaAPI("Sem evento ativado", "OFFLINE", "");
-        } else {
-            switchBtn.disabled = false;
-        }
-    }
-
-    async function ativarEvento(index) {
-        if(confirm(`Ativar sistema para: ${eventos[index].nome}?`)) {
-            eventos.forEach((e, i) => e.ativo = (i === index));
-            localStorage.setItem('eventos_db', JSON.stringify(eventos));
-            await sincronizar(eventos[index].nome, eventos[index].formato);
-            renderizarLista();
-            checarEventoAtivo();
         }
     }
 
     async function salvarEvento() {
         const nome = document.getElementById('input-evento').value;
+        const data = document.getElementById('input-data').value;
         const formato = document.getElementById('select-formato').value;
         const molduraFile = document.getElementById('input-moldura').files[0];
         const editIdx = parseInt(document.getElementById('edit-index').value);
-        if(!nome) return;
+        if(!nome || !data) return alert("Por favor, preencha o nome e selecione uma data.");
 
-        const novoEv = { nome, formato, ativo: true, data: new Date().toLocaleDateString() };
+        const btn = document.getElementById('btn-submit');
+        const btnTxt = document.getElementById('btn-text');
+        const novoEv = { nome, formato, data: data.split('-').reverse().join('/'), dataRaw: data, ativo: true };
+
         if(editIdx > -1) eventos[editIdx] = novoEv;
         else { eventos.forEach(e => e.ativo = false); eventos.unshift(novoEv); }
 
@@ -268,72 +192,69 @@
             formData.append('file', molduraFile);
             formData.append('evento', nome);
             formData.append('tipo', 'moldura');
-            try { await fetch(`${API_URL}/upload`, { method: 'POST', body: formData }); } catch(e) { console.error(e); }
+            try { await fetch(`${API_URL}/upload`, { method: 'POST', body: formData }); } catch(e){}
         }
 
-        await sincronizar(nome, formato);
+        await sincronizar(nome, formato, "ONLINE");
+        
+        btn.classList.add('success');
+        btnTxt.innerHTML = '<i class="fas fa-check-circle"></i> EVENTO SALVO';
+        
+        setTimeout(() => {
+            btn.classList.remove('success');
+            resetForm();
+            renderizarLista();
+            checarEventoAtivo();
+        }, 1500);
+    }
+
+    function resetForm() {
         document.getElementById('edit-index').value = "-1";
-        document.getElementById('btn-submit').innerText = "Sincronizar Protocolo";
+        document.getElementById('btn-text').innerText = "CRIAR EVENTO";
+        document.getElementById('card-form-title').innerText = "NOVO EVENTO";
         document.getElementById('input-evento').value = "";
+        document.getElementById('input-data').value = "";
         document.getElementById('input-moldura').value = "";
         document.getElementById('img-preview').style.display = "none";
-        renderizarLista();
-        checarEventoAtivo();
+        document.getElementById('label-file').innerText = "CARREGAR LAYER PNG";
     }
 
-    async function sincronizar(nome, formato) {
-        await enviarStatusParaAPI(nome, "ONLINE", formato);
-        document.getElementById('server-status').checked = true;
-        atualizarUIStatus(true);
-    }
-
-    function salvarStatusRede() {
-        const status = document.getElementById('server-status').checked;
-        const ativo = eventos.find(e => e.ativo);
-        const nomeEvento = ativo ? ativo.nome : "Sem evento ativado";
-        const statusTexto = status ? "ONLINE" : "OFFLINE";
-        const formatoEvento = ativo ? ativo.formato : "";
-        atualizarUIStatus(status);
-        enviarStatusParaAPI(nomeEvento, statusTexto, formatoEvento);
-    }
-
-    async function enviarStatusParaAPI(evento, status, formato) {
+    async function sincronizar(nome, formato, status) {
         try {
             await fetch(`${API_URL}/set-config`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ evento, status, formato })
+                body: JSON.stringify({ evento: nome, status: status, formato: formato })
             });
-        } catch(e) { console.error(e); }
+            document.getElementById('server-status').checked = (status === "ONLINE");
+            atualizarUIStatus(status === "ONLINE");
+        } catch(e){}
+    }
+
+    function salvarStatusRede() {
+        const on = document.getElementById('server-status').checked;
+        const ativo = eventos.find(e => e.ativo);
+        if(ativo) sincronizar(ativo.nome, ativo.formato, on ? "ONLINE" : "OFFLINE");
     }
 
     function atualizarUIStatus(on) {
-        const box = document.getElementById('status-box');
         const lb = document.getElementById('label-status');
-        if(on) {
-            box.className = "status-container bg-on";
-            lb.innerText = "ONLINE";
-            lb.style.color = "var(--neon)";
-        } else {
-            box.className = "status-container bg-off";
-            lb.innerText = "OFFLINE";
-            lb.style.color = "var(--red)";
-        }
+        lb.innerText = on ? "ONLINE" : "OFFLINE";
+        lb.style.color = on ? "var(--neon)" : "var(--red)";
     }
 
     function renderizarLista() {
-        const corpo = document.getElementById('corpo-lista');
-        corpo.innerHTML = eventos.map((ev, i) => `
+        document.getElementById('corpo-lista').innerHTML = eventos.map((ev, i) => `
             <div class="evento-item ${ev.ativo ? 'ativo' : ''}">
                 <div>
-                    <div style="font-size:12px; font-weight:900; letter-spacing:1px;">${ev.nome}</div>
+                    <div style="font-size:12px; font-weight:900;">${ev.nome}</div>
                     <div style="font-size:9px; color:#555; text-transform:uppercase;">${ev.data} • ${ev.formato}</div>
                 </div>
                 <div style="display:flex; gap:15px; align-items:center;">
-                    <span style="cursor:pointer; font-size:12px;" onclick="editar(${i})">EDITAR</span>
-                    <button class="btn-neon-style" style="font-size:9px; padding: 6px 15px; ${ev.ativo ? 'background:var(--neon); color:black;' : ''}" 
+                    <i class="fas fa-edit" style="cursor:pointer; font-size:14px; color:#555;" onclick="editar(${i})"></i>
+                    <button class="btn-neon-style" style="font-size:9px; padding: 6px 12px; ${ev.ativo ? 'background:var(--neon); color:black;' : ''}" 
                             onclick="ativarEvento(${i})">${ev.ativo ? 'ATIVO' : 'ATIVAR'}</button>
-                    <span style="cursor:pointer; opacity:0.2;" onclick="excluir(${i})">DEL</span>
+                    <i class="fas fa-trash-alt" style="cursor:pointer; color:var(--red); opacity:0.3; font-size:14px;" onclick="excluir(${i})"></i>
                 </div>
             </div>
         `).join('');
@@ -342,22 +263,35 @@
     function editar(i) {
         const ev = eventos[i];
         document.getElementById('input-evento').value = ev.nome;
+        document.getElementById('input-data').value = ev.dataRaw || "";
         document.getElementById('select-formato').value = ev.formato;
         document.getElementById('edit-index').value = i;
-        document.getElementById('btn-submit').innerText = "Atualizar Cadastro";
+        document.getElementById('btn-text').innerText = "SALVAR EVENTO";
+        document.getElementById('card-form-title').innerText = "EDITANDO EVENTO";
     }
 
-    async function excluir(i) {
-        const eventoParaExcluir = eventos[i];
-        if(confirm(`Deseja excluir o evento "${eventoParaExcluir.nome}"?`)) { 
-            eventos.splice(i, 1); 
-            localStorage.setItem('eventos_db', JSON.stringify(eventos)); 
-            renderizarLista(); 
-            checarEventoAtivo(); 
+    async function ativarEvento(index) {
+        eventos.forEach((e, i) => e.ativo = (i === index));
+        localStorage.setItem('eventos_db', JSON.stringify(eventos));
+        await sincronizar(eventos[index].nome, eventos[index].formato, "ONLINE");
+        renderizarLista();
+        checarEventoAtivo();
+    }
+
+    function excluir(i) {
+        if(confirm("Deseja realmente excluir este evento?")) {
+            eventos.splice(i, 1);
+            localStorage.setItem('eventos_db', JSON.stringify(eventos));
+            renderizarLista();
+            checarEventoAtivo();
         }
     }
 
-    document.addEventListener('keydown', e => { if(e.key === "Escape") location.reload(); });
+    function checarEventoAtivo() {
+        const temAtivo = eventos.some(e => e.ativo);
+        document.getElementById('server-status').disabled = !temAtivo;
+        if(!temAtivo) atualizarUIStatus(false);
+    }
 </script>
 </body>
 </html>
