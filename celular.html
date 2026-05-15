@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOTO PRINT - MOBILE v1.7</title>
+    <title>PHOTO PRINT - MOBILE v1.8</title>
     <style>
         :root { --neon: #39ff14; --error: #ff0000; }
         body { 
@@ -21,6 +21,14 @@
         
         .spin { width: 60px; height: 60px; border: 5px solid rgba(57, 255, 20, 0.1); border-top-color: var(--neon); border-radius: 50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
+
+        /* Animação Pulsante do Olho Verde */
+        @keyframes pulse-neon {
+            0% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); transform: scale(1); }
+            70% { box-shadow: 0 0 0 20px rgba(57, 255, 20, 0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); transform: scale(1); }
+        }
+
         .icon-rotate { width: 80px; height: 80px; margin-bottom: 20px; animation: rotateAnim 2s infinite; }
         @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
 
@@ -30,10 +38,13 @@
         .subtitle { color: white; font-size: 14px; letter-spacing: 3px; margin-top: 5px; opacity: 0.7; font-weight: bold; text-transform: uppercase; }
         #nome-evento-capa { font-size: 22px; font-weight: bold; color: var(--neon); text-transform: uppercase; margin: 20px 0; min-height: 25px; }
 
-        /* Botões da Home */
-        .selection-group { display: none; flex-direction: column; gap: 15px; align-items: center; }
-        .btn-select { background: black; border: 2px solid var(--neon); color: var(--neon); padding: 15px 40px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; border-radius: 50px; cursor: pointer; width: 220px; }
-        .btn-eye { width: 150px; height: 150px; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--neon); }
+        /* Botão Olho Verde Pulsante */
+        .btn-eye { 
+            width: 140px; height: 140px; border-radius: 50%; border: 4px solid var(--neon); 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; 
+            animation: pulse-neon 2s infinite; background: rgba(0,0,0,0.5);
+        }
+        .eye-inner { width: 45px; height: 45px; border-radius: 50%; border: 3px solid var(--neon); }
 
         /* Container da Câmera */
         #cam-container { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
@@ -48,8 +59,8 @@
 
         /* Controles da Câmera */
         #cam-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; align-items: center; justify-content: space-evenly; width: 100%; pointer-events: auto; }
-        .cam-btn { width: 65px; height: 65px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .shutter-btn { width: 90px; height: 90px; background: black; border-radius: 50%; border: 5px solid var(--neon); cursor: pointer; box-shadow: 0 0 25px var(--neon); }
+        .cam-btn { width: 60px; height: 60px; background: rgba(0,0,0,0.6); border: 1px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .shutter-btn { width: 85px; height: 85px; background: black; border-radius: 50%; border: 4px solid var(--neon); cursor: pointer; box-shadow: 0 0 20px var(--neon); }
     </style>
 </head>
 <body>
@@ -57,7 +68,7 @@
     <div id="rotate-warning">
         <svg class="icon-rotate" viewBox="0 0 24 24" fill="var(--neon)"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h2l-3.5 3.5-3.5-3.5h2c-.34-3.19-2.32-5.85-5.08-7.1l1.11-1.88M12.06 19c-1.38 0-2.61-.56-3.5-1.47l-1.41 1.41C8.36 20.15 10.09 21 12.06 21c3.97 0 7.32-2.8 8.16-6.5h-2.07c-.77 2.58-3.17 4.5-5.99 4.5M2.06 11h2c.34 3.19 2.32 5.85 5.08 7.1l-1.11 1.88C4.76 18.43 2.42 15.26 2.06 11.5M12.06 5c1.38 0 2.61.56 3.5 1.47l1.41-1.41C15.76 3.85 14.03 3 12.06 3 8.09 3 4.74 5.8 3.9 9.5h2.07C6.74 6.92 9.14 5 12.06 5Z"/></svg>
         <h2>GIRE O APARELHO</h2>
-        <p>Aguardando posição Horizontal...</p>
+        <p>Necessário posição Horizontal (Deitado)</p>
     </div>
 
     <div id="offline-screen"><div class="mantencao-txt">SISTEMA EM MANUTENÇÃO</div></div>
@@ -74,17 +85,14 @@
             </div>
 
             <div id="cam-controls">
-                <!-- Voltar -->
                 <div class="cam-btn" onclick="voltarHome()">
-                    <svg viewBox="0 0 24 24" width="30" fill="var(--neon)"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+                    <svg viewBox="0 0 24 24" width="25" fill="var(--neon)"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
                 </div>
-                <!-- Disparar -->
                 <div id="shutter-placeholder">
                     <div class="shutter-btn" onclick="iniciarSequencia()"></div>
                 </div>
-                <!-- Trocar Câmera -->
                 <div class="cam-btn" onclick="switchCam()">
-                    <svg viewBox="0 0 24 24" width="32" fill="var(--neon)"><path d="M15.5,14L20.5,19L19.08,20.42L14.08,15.42L15.5,14M3,3.27L4.27,2L22,19.73L20.73,21L18.11,18.39C17.09,19.38 15.62,20 14,20H10V17H14C14.7,17 15.35,16.79 15.9,16.42L12,12.52V15L7,10L8.1,8.9L3,3.27M17,10V7H13V10.18L11,8.18V5H17V2L22,7L17,12V10Z" /></svg>
+                    <svg viewBox="0 0 24 24" width="28" fill="var(--neon)"><path d="M15.5,14L20.5,19L19.08,20.42L14.08,15.42L15.5,14M3,3.27L4.27,2L22,19.73L20.73,21L18.11,18.39C17.09,19.38 15.62,20 14,20H10V17H14C14.7,17 15.35,16.79 15.9,16.42L12,12.52V15L7,10L8.1,8.9L3,3.27M17,10V7H13V10.18L11,8.18V5H17V2L22,7L17,12V10Z" /></svg>
                 </div>
             </div>
         </div>
@@ -96,14 +104,9 @@
         <div id="nome-evento-capa">...</div>
     </div>
 
-    <div class="main-ui" style="flex-grow:1; display:flex; align-items:center; justify-content:center; padding-bottom:80px;">
-        <div id="single-btn" class="btn-eye" onclick="ligar('PADRAO')">
-            <div style="width:50px; height:50px; border-radius:50%; border:3px solid var(--neon);"></div>
-        </div>
-        
-        <div id="dual-selection" class="selection-group">
-            <button class="btn-select" onclick="ligar('10X15H')">Horizontal</button>
-            <button class="btn-select" onclick="ligar('10X15V')">Vertical</button>
+    <div class="main-ui" style="flex-grow:1; display:flex; align-items:center; justify-content:center; padding-bottom:60px;">
+        <div id="main-action-btn" class="btn-eye" onclick="ligar()">
+            <div class="eye-inner"></div>
         </div>
     </div>
 
@@ -127,26 +130,30 @@
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
                 const d = await r.json();
                 ev = d.evento || "Geral";
-                formatStr = d.formato || "";
+                formatStr = d.formato || "POLAROID";
                 document.getElementById('nome-evento-capa').innerText = ev;
                 
-                const is10x15 = formatStr.toUpperCase().includes("10X15");
-                document.getElementById('dual-selection').style.display = is10x15 ? "flex" : "none";
-                document.getElementById('single-btn').style.display = is10x15 ? "none" : "flex";
+                // Mapeia o formato do painel para as configurações internas
+                configAtual = FORMATOS[formatStr.toUpperCase()] || FORMATOS["POLAROID"];
 
                 await getFrame();
             } catch (e) { console.error(e); }
         }
 
         async function getFrame() {
-            const r = await fetch(`${API}/list-photos?evento=${encodeURIComponent(ev)}&t=${Date.now()}`);
-            const arquivos = await r.json();
-            const p = arquivos.find(x => x.key.toLowerCase().endsWith('.png'));
-            frame = p ? `${API}/photo/${encodeURIComponent(p.key)}` : "";
+            try {
+                const r = await fetch(`${API}/list-photos?evento=${encodeURIComponent(ev)}&t=${Date.now()}`);
+                const arquivos = await r.json();
+                const p = arquivos.find(x => x.key.toLowerCase().endsWith('.png'));
+                frame = p ? `${API}/photo/${encodeURIComponent(p.key)}` : "";
+            } catch(e) {}
         }
 
         function checkOrientation() {
-            if (!configAtual || !configAtual.exigeH) return;
+            if (!configAtual || !configAtual.exigeH) {
+                document.getElementById('rotate-warning').style.display = "none";
+                return;
+            }
             const isLandscape = window.innerWidth > window.innerHeight;
             document.getElementById('rotate-warning').style.display = isLandscape ? "none" : "flex";
         }
@@ -169,20 +176,13 @@
             await startStream();
         }
 
-        async function ligar(modo) {
-            if (!frame) return alert("Moldura não carregada!");
+        async function ligar() {
+            if (!frame) return alert("Moldura não carregada no Painel!");
             
-            if (modo === 'PADRAO') {
-                let tipo = formatStr.toUpperCase().includes("TIRINHA") ? "TIRINHA" : "POLAROID";
-                configAtual = FORMATOS[tipo];
-            } else {
-                configAtual = FORMATOS[modo];
-            }
-
             document.getElementById('cam-container').style.display = "block";
             document.getElementById('info-topo').innerText = `${ev} | ${configAtual.key}`;
             document.getElementById('num-count').innerText = "";
-            document.getElementById('sub-count').innerText = "CLIQUE PARA INICIAR";
+            document.getElementById('sub-count').innerText = "TOQUE NO DISPARADOR";
             
             checkOrientation();
             await startStream();
@@ -195,6 +195,7 @@
         }
 
         async function iniciarSequencia() {
+            // Se for 10x15H do painel, trava se estiver em pé
             if (configAtual.exigeH && window.innerWidth <= window.innerHeight) return;
             
             document.getElementById('shutter-placeholder').style.visibility = "hidden";
@@ -232,7 +233,6 @@
                 ctx.fillStyle = "white"; ctx.fillRect(0,0,cv.width, cv.height);
                 
                 if (configAtual.key === "TIRINHA") {
-                    // Lógica de 3 fotos (Slots)
                     const slots = [{y:0.030, h:0.254}, {y:0.296, h:0.254}, {y:0.559, h:0.254}];
                     let count = 0;
                     pics.forEach((src, i) => {
@@ -269,24 +269,25 @@
 
         function exibir(url) {
             document.getElementById('loader').innerHTML = `
-                <img src="${url}" style="max-height:70vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
-                <div style="margin-top:20px; display:flex; gap:10px;">
-                    <button class="btn-select" style="width:auto" onclick="enviar()">ENVIAR E SAIR</button>
-                    <button class="btn-select" style="width:auto; background:#333;" onclick="location.reload()">CANCELAR</button>
+                <img src="${url}" style="max-height:65vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
+                <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px; align-items:center;">
+                    <button class="btn-eye" style="width:70px; height:70px; animation:none;" onclick="enviar()"><i class="fas fa-paper-plane" style="color:var(--neon)"></i> OK</button>
+                    <span style="font-size:10px; color:var(--neon); font-weight:bold;">ENVIAR FOTO</span>
+                    <button style="background:transparent; border:none; color:#555; font-size:11px; text-decoration:underline; margin-top:10px;" onclick="location.reload()">CANCELAR</button>
                 </div>`;
         }
 
         async function enviar() {
-            document.getElementById('loader').innerHTML = `<div class="spin"></div><p style="color:var(--neon)">ENVIANDO...</p>`;
+            document.getElementById('loader').innerHTML = `<div class="spin"></div><p style="color:var(--neon)">ENVIANDO PARA NUVEM...</p>`;
             document.getElementById('c-strip').toBlob(async b => {
                 const fd = new FormData();
                 fd.append('file', b, 'foto.jpg'); fd.append('evento', ev);
-                try { await fetch(`${API}/upload`, { method: 'POST', body: fd }); location.reload(); } catch (e) { alert("Erro!"); location.reload(); }
+                try { await fetch(`${API}/upload`, { method: 'POST', body: fd }); location.reload(); } catch (e) { alert("Erro ao enviar!"); location.reload(); }
             }, 'image/jpeg', 0.95);
         }
 
         sync();
-        setInterval(sync, 15000);
+        setInterval(sync, 10000); // Sincroniza com o painel a cada 10s
     </script>
 </body>
 </html>
