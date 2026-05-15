@@ -2,16 +2,15 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>AUTOGRAPH CAM - Totem v2.0</title>
+    <title>WEBCAM - Terminal Totem v2.1</title>
     <style>
         :root { --neon: #39ff14; --dark: #0a0a0a; }
         body { 
             margin: 0; background: var(--dark); color: white; 
-            font-family: 'Segoe UI', 'Orbitron', sans-serif; overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; 
             display: flex; flex-direction: column; height: 100vh;
         }
 
-        /* Video e Preview */
         #cam-preview {
             position: absolute; inset: 0; width: 100%; height: 100%;
             object-fit: cover; transform: scaleX(-1); display: none;
@@ -23,77 +22,54 @@
         }
         #img-review { max-width: 80%; max-height: 60%; border: 5px solid var(--neon); border-radius: 10px; box-shadow: 0 0 30px var(--neon); }
 
-        /* Interface Principal */
-        #ui-overlay { position: relative; z-index: 10; height: 100%; pointer-events: none; }
-        
-        /* Canto Superior Esquerdo - Info Sistema */
         .system-info { 
             position: absolute; top: 30px; left: 30px; text-align: left; 
-            border-left: 4px solid var(--neon); padding-left: 15px;
+            border-left: 4px solid var(--neon); padding-left: 15px; z-index: 100;
         }
         .sys-title { font-size: 28px; font-weight: 900; color: var(--neon); text-transform: uppercase; margin: 0; }
         .sys-sub { font-size: 10px; letter-spacing: 3px; opacity: 0.7; text-transform: uppercase; }
         .event-label { margin-top: 10px; font-weight: bold; color: #fff; font-size: 18px; }
 
-        /* Telas (Start / Counter / Print / Despedida) */
-        .screen { 
-            position: fixed; inset: 0; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 20; pointer-events: auto;
-        }
+        .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; }
 
-        /* Botão Start Gigante */
         .btn-start {
             width: 320px; height: 320px; border-radius: 50%;
             background: rgba(0,0,0,0.6); border: 10px solid var(--neon);
             color: white; cursor: pointer; display: flex; flex-direction: column;
             align-items: center; justify-content: center; text-align: center;
-            box-shadow: 0 0 50px var(--neon); transition: 0.3s;
+            box-shadow: 0 0 50px var(--neon); transition: 0.3s; pointer-events: auto;
         }
-        .btn-start:active { transform: scale(0.9); background: var(--neon); }
         .btn-start b { font-size: 30px; color: var(--neon); }
         .btn-start span { font-size: 18px; margin-top: 10px; }
-        .btn-start:active b, .btn-start:active span { color: black; }
+        .btn-start:active { transform: scale(0.95); background: var(--neon); color: #000; }
 
-        /* Mensagens */
         #counter { font-size: 280px; font-weight: 900; text-shadow: 0 0 60px var(--neon); display: none; }
-        #smile-msg { font-size: 100px; font-weight: 900; color: var(--neon); display: none; text-shadow: 0 0 40px #000; }
+        #smile-msg { font-size: 100px; font-weight: 900; color: var(--neon); display: none; }
 
-        /* Seleção de Impressão */
-        .print-options { display: flex; gap: 30px; margin-top: 30px; }
+        .print-options { display: flex; gap: 30px; margin-top: 30px; pointer-events: auto; }
         .btn-print {
             padding: 20px 40px; background: transparent; border: 3px solid var(--neon);
             color: white; font-size: 24px; font-weight: bold; border-radius: 10px;
             cursor: pointer; transition: 0.3s;
         }
-        .btn-print:active { background: var(--neon); color: black; }
+        .btn-print:hover { background: var(--neon); color: black; }
 
-        /* Despedida */
         .farewell-text { font-size: 50px; text-align: center; color: var(--neon); font-weight: 900; }
-
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 200; }
-        
-        #loader {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            z-index: 300; display: none; flex-direction: column;
-            align-items: center; justify-content: center;
-        }
-        .spinner { width: 80px; height: 80px; border: 8px solid #222; border-top: 8px solid var(--neon); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
     <div id="flash"></div>
-    <div id="loader"><div class="spinner"></div><h2 id="load-msg">PROCESSANDO...</h2></div>
+    <div id="loader"><h2 id="load-msg" style="color:var(--neon)">PROCESSANDO...</h2></div>
 
     <video id="cam-preview" autoplay playsinline></video>
 
-    <div id="ui-overlay">
-        <div class="system-info">
-            <div class="sys-title">PHOTO PRINT</div>
-            <div class="sys-sub">Colecionando Momentos</div>
-            <div id="event-display" class="event-label">CARREGANDO...</div>
-        </div>
+    <div class="system-info">
+        <div class="sys-title">WEBCAM</div>
+        <div class="sys-sub">Colecionando Momentos</div>
+        <div id="event-display" class="event-label">CARREGANDO...</div>
     </div>
 
     <div id="screen-start" class="screen">
@@ -104,11 +80,11 @@
     </div>
 
     <div id="screen-capture" class="screen" style="display:none">
-        <div id="counter">5</div>
+        <div id="counter">8</div>
         <div id="smile-msg">SORRIA! 📸</div>
     </div>
 
-    <div id="final-preview-container">
+    <div id="final-preview-container" class="screen">
         <h2 style="color:var(--neon)">FICOU ÓTIMA!</h2>
         <img id="img-review" src="">
         <p>Quantas cópias deseja imprimir?</p>
@@ -121,8 +97,8 @@
     <div id="screen-farewell" class="screen" style="display:none; background:rgba(0,0,0,0.95)">
         <div class="farewell-text">
             MUITO OBRIGADO! <br>
-            <span style="font-size:25px; color:white; opacity:0.8">SUA FOTO É UMA OBRA DE ARTE.</span><br>
-            <small style="font-size:20px; display:block; margin-top:20px">VOLTE SEMPRE!</small>
+            <span style="font-size:25px; color:white; opacity:0.8">SUA FOTO ESTÁ SENDO GERADA.</span><br>
+            <small style="font-size:20px; display:block; margin-top:20px">APROVEITE O EVENTO!</small>
         </div>
     </div>
 
@@ -131,11 +107,10 @@
 
     <script>
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-        let config = { evento: "", formato: "", molduraUrl: "" };
+        let config = { evento: "", molduraUrl: "" };
         let finalBlob = null;
         const video = document.getElementById('cam-preview');
 
-        // Sincroniza dados do painel
         async function sync() {
             try {
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
@@ -150,41 +125,34 @@
             } catch(e) { console.error("Erro sync"); }
         }
 
-        // Inicia a sessão ao tocar no círculo
         async function initSession() {
             document.getElementById('screen-start').style.display = "none";
             document.getElementById('loader').style.display = "flex";
-            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1920, height: 1080 } });
                 video.srcObject = stream;
                 video.style.display = "block";
-                
                 setTimeout(() => {
                     document.getElementById('loader').style.display = "none";
                     startCountdown();
                 }, 1000);
-            } catch (err) {
-                alert("Câmera não disponível.");
-                location.reload();
-            }
+            } catch (err) { alert("Câmera não permitida."); location.reload(); }
         }
 
         async function startCountdown() {
-            const screenCap = document.getElementById('screen-capture');
             const counterEl = document.getElementById('counter');
-            screenCap.style.display = "flex";
-            counterEl.style.display = "block";
-
-            for(let i=5; i>0; i--) {
+            document.getElementById('screen-capture').style.display = "flex";
+            
+            // Alterado para 8 segundos conforme pedido
+            for(let i=8; i>0; i--) {
                 counterEl.innerText = i;
+                counterEl.style.display = "block";
                 await new Promise(r => setTimeout(r, 1000));
             }
 
             counterEl.style.display = "none";
             document.getElementById('smile-msg').style.display = "block";
-            
-            setTimeout(takeSnap, 800);
+            setTimeout(takeSnap, 1000);
         }
 
         function takeSnap() {
@@ -194,29 +162,22 @@
 
             const canvas = document.getElementById('c-snap');
             const ctx = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0);
-            
             processFinalImage(canvas.toDataURL('image/jpeg', 0.95));
         }
 
         function processFinalImage(photoData) {
             document.getElementById('screen-capture').style.display = "none";
             document.getElementById('loader').style.display = "flex";
-            document.getElementById('load-msg').innerText = "CRIANDO MOLDURA...";
-
             const finalCanvas = document.getElementById('c-final');
             const ctx = finalCanvas.getContext('2d');
-            const imgPhoto = new Image();
-            const imgFrame = new Image();
+            const imgPhoto = new Image(); const imgFrame = new Image();
 
             imgFrame.crossOrigin = "anonymous";
             imgFrame.onload = () => {
-                finalCanvas.width = imgFrame.width;
-                finalCanvas.height = imgFrame.height;
+                finalCanvas.width = imgFrame.width; finalCanvas.height = imgFrame.height;
                 imgPhoto.onload = () => {
                     const ratio = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
                     const x = (finalCanvas.width - imgPhoto.width * ratio) / 2;
@@ -224,12 +185,9 @@
                     ctx.drawImage(imgPhoto, x, y, imgPhoto.width * ratio, imgPhoto.height * ratio);
                     ctx.drawImage(imgFrame, 0, 0);
                     
-                    // Mostrar Review
-                    const resultData = finalCanvas.toDataURL('image/jpeg', 0.9);
-                    document.getElementById('img-review').src = resultData;
+                    document.getElementById('img-review').src = finalCanvas.toDataURL('image/jpeg', 0.9);
                     document.getElementById('loader').style.display = "none";
                     document.getElementById('final-preview-container').style.display = "flex";
-                    
                     finalCanvas.toBlob(b => { finalBlob = b; }, 'image/jpeg', 0.9);
                 };
                 imgPhoto.src = photoData;
@@ -240,34 +198,23 @@
         async function finishPrint(qtd) {
             document.getElementById('final-preview-container').style.display = "none";
             document.getElementById('loader').style.display = "flex";
-            document.getElementById('load-msg').innerText = "ENVIANDO PARA IMPRESSÃO...";
 
             const fd = new FormData();
-            fd.append('file', finalBlob, 'foto.jpg');
+            fd.append('file', finalBlob, 'webcam.jpg');
             fd.append('evento', config.evento);
-            fd.append('copias', qtd); // Info de cópias enviada
+            fd.append('copias', qtd); // <--- INFORMAÇÃO DA QUANTIDADE AQUI
 
             try {
                 await fetch(`${API}/upload`, { method: 'POST', body: fd });
                 showFarewell();
-            } catch(e) {
-                alert("Erro ao salvar.");
-                location.reload();
-            }
+            } catch(e) { location.reload(); }
         }
 
         function showFarewell() {
             document.getElementById('loader').style.display = "none";
             document.getElementById('screen-farewell').style.display = "flex";
-            
-            // Desliga a câmera para economizar
-            if(video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-            }
-
-            setTimeout(() => {
-                location.reload(); // Volta para a tela inicial
-            }, 6000);
+            if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+            setTimeout(() => { location.reload(); }, 5000);
         }
 
         sync();
