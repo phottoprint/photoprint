@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - GALLERY v3.7</title>
+    <title>PHOTO PRINT - GALLERY v3.9</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -18,37 +18,41 @@
         
         /* AJUSTES DE IMPRESSÃO */
         #modal-print { display: none; }
-
         @media print {
             @page { margin: 0; size: auto; }
             body * { visibility: hidden; display: none !important; }
             #modal-print, #modal-print img { display: flex !important; visibility: visible; }
-            #modal-print {
-                position: absolute; inset: 0; width: 100vw; height: 100vh;
-                justify-content: center; align-items: center; background: white !important;
-            }
+            #modal-print { position: absolute; inset: 0; width: 100vw; height: 100vh; justify-content: center; align-items: center; background: white !important; }
             #img-print { max-width: 100% !important; max-height: 100% !important; width: auto !important; height: auto !important; }
         }
 
-        header { padding: 50px 40px 30px; display: flex; flex-direction: column; align-items: center; }
-        .brand-center h1 { margin: 0; font-size: 50px; color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 10px; font-weight: 900; text-transform: uppercase; }
+        header { padding: 30px 40px 10px; display: flex; flex-direction: column; align-items: center; position: relative; }
         
-        .search-box { margin-top: 30px; display: flex; gap: 10px; }
-        .search-box input { background: rgba(255,255,255,0.05); border: var(--glass-border); color: #fff; padding: 12px 20px; border-radius: 8px; width: 200px; outline: none; }
-        .search-btn { background: var(--accent); color: #000; border: none; padding: 0 25px; border-radius: 8px; font-weight: 900; cursor: pointer; }
+        .status-container { position: absolute; left: 40px; top: 40px; text-align: left; border-left: 3px solid var(--accent); padding-left: 15px; }
+        .status-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6; margin-bottom: 2px; }
+        #nome-evento { font-size: 18px; font-weight: 900; color: var(--accent); text-transform: uppercase; margin: 0; }
+        #tipo-formato { font-size: 12px; font-weight: bold; opacity: 0.8; margin-top: 2px; text-transform: uppercase; color: #fff; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px; padding: 40px 60px; }
-        .card { background: var(--surface); border-radius: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.3s; position: relative; }
+        .brand-center { text-align: center; margin-top: 20px; }
+        .brand-center h1 { margin: 0; font-size: 45px; color: var(--accent); text-shadow: var(--neon-shadow); letter-spacing: 8px; font-weight: 900; text-transform: uppercase; }
+        .brand-subtitle { font-size: 14px; letter-spacing: 4px; text-transform: uppercase; opacity: 0.7; margin-top: 5px; font-weight: bold; }
+
+        .search-box { margin-top: 25px; display: flex; gap: 10px; justify-content: center; }
+        .search-box input { background: rgba(255,255,255,0.05); border: var(--glass-border); color: #fff; padding: 10px 15px; border-radius: 8px; width: 180px; outline: none; }
+        .search-btn { background: var(--accent); color: #000; border: none; padding: 0 20px; border-radius: 8px; font-weight: 900; cursor: pointer; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 30px 60px; }
+        .card { background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.3s; position: relative; }
         .card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: var(--neon-shadow); }
-        .card img { width: 100%; display: block; }
-        .card .badge { position: absolute; top: 10px; right: 10px; background: var(--accent); color: #000; padding: 4px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .card img { width: 100%; display: block; height: auto; }
+        .card .badge { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #000; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 2; }
 
         /* SIDEBAR */
         .sidebar { position: fixed; right: -350px; top: 0; width: 300px; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 5000; transition: 0.5s; padding: 120px 25px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
         .sidebar-btn { width: 100%; padding: 18px; margin-bottom: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 15px; font-weight: bold; }
-        .menu-trigger { position: absolute; right: 40px; top: 50px; cursor: pointer; z-index: 5001; }
-        .menu-trigger span { display: block; width: 35px; height: 3px; background: var(--accent); margin: 6px 0; }
+        .menu-trigger { position: absolute; right: 40px; top: 40px; cursor: pointer; z-index: 5001; }
+        .menu-trigger span { display: block; width: 30px; height: 3px; background: var(--accent); margin: 5px 0; }
 
         /* MODAL ZOOM */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
@@ -62,11 +66,18 @@
     <div class="menu-trigger" onclick="document.getElementById('sidebar').classList.toggle('active')"><span></span><span></span><span></span></div>
 
     <header>
+        <div class="status-container">
+            <div class="status-label">Status</div>
+            <div id="nome-evento">Carregando...</div>
+            <div id="tipo-formato">--</div>
+        </div>
+
         <div class="brand-center">
             <h1>PHOTO PRINT</h1>
+            <div class="brand-subtitle">colecionando momentos</div>
             <div class="search-box">
-                <input type="number" id="input-busca" placeholder="Nº DA FOTO">
-                <button class="search-btn" onclick="executarBusca()">BUSCAR</button>
+                <input type="number" id="input-busca" placeholder="DIGITE O ID">
+                <button class="search-btn" onclick="executarBusca()"><i class="fa-solid fa-magnifying-glass"></i></button>
             </div>
         </div>
     </header>
@@ -98,19 +109,29 @@
     let isPrinting = false;
     let primeiraCarga = true; 
 
+    // Função para traduzir o código do formato para texto amigável
+    function traduzirFormato(formato) {
+        if (!formato) return "--";
+        const f = formato.toUpperCase();
+        if (f === "10X15H") return "10x15 Horizontal";
+        if (f === "10X15V") return "10x15 Vertical";
+        return formato; // Retorna o original caso seja Tirinha ou Polaroid
+    }
+
     async function atualizar() {
         try {
             const resStatus = await fetch(`${API}/status?t=${Date.now()}`);
             const config = await resStatus.json();
             eventoAtual = config.evento || "Geral";
+            
+            document.getElementById('nome-evento').innerText = eventoAtual;
+            // Aplica a tradução aqui
+            document.getElementById('tipo-formato').innerText = traduzirFormato(config.formato);
 
             const resF = await fetch(`${API}/list-photos?evento=${encodeURIComponent(eventoAtual)}&t=${Date.now()}`);
             const dados = await resF.json();
             
-            // Filtra apenas JPGs e ignora molduras PNG
             const fotosJpg = dados.filter(f => !f.key.toLowerCase().endsWith('.png'));
-
-            // Identifica o que é novo comparando com o Set local
             const novasFotos = fotosJpg.filter(f => !chavesLocais.has(f.key));
 
             if (novasFotos.length > 0) {
@@ -119,18 +140,13 @@
                     todasFotos.push({ id: todasFotos.length + 1, url: urlCompleta, key: f.key });
                     chavesLocais.add(f.key);
                     
-                    // Se não for a abertura da página, manda imprimir automaticamente
                     if (!primeiraCarga) {
-                        console.log("Auto-Print acionado para:", f.key);
                         addToPrintQueue(urlCompleta);
                     }
                 }
                 render();
             }
-
-            // Após a primeira execução, libera a impressão automática para as próximas
             primeiraCarga = false;
-
         } catch(e) { console.error("Erro na atualização:", e); }
     }
 
@@ -151,15 +167,12 @@
 
     function processQueue() {
         if (printQueue.length === 0) { isPrinting = false; return; }
-        
         isPrinting = true;
         const imgP = document.getElementById('img-print');
-        
         imgP.onload = () => {
             window.focus();
             setTimeout(() => { 
                 window.print(); 
-                // Espera 3 segundos após a impressão para processar a próxima da fila
                 setTimeout(processQueue, 3000); 
             }, 1000);
         };
@@ -176,7 +189,7 @@
     function reimprimirAtual() { addToPrintQueue(document.getElementById('img-zoom').src); }
 
     async function excluirFoto(key) {
-        if(confirm("Excluir esta foto permanentemente?")) {
+        if(confirm("Excluir esta foto?")) {
             await fetch(`${API}/delete-photo?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
             location.reload();
         }
@@ -189,11 +202,11 @@
             zip.file(`foto_${f.id}.jpg`, blob);
         }
         const content = await zip.generateAsync({type:"blob"});
-        saveAs(content, "galeria_evento.zip");
+        saveAs(content, "galeria.zip");
     }
 
     async function limparTudo() {
-        if(confirm("ATENÇÃO: Isso apagará todas as fotos do servidor!") && prompt("Digite a senha:") === "123") {
+        if(confirm("Apagar tudo?") && prompt("Senha:") === "123") {
             await fetch(`${API}/delete-all`, { method: 'DELETE' });
             location.reload();
         }
@@ -203,10 +216,9 @@
         const idBusca = document.getElementById('input-busca').value;
         const foto = todasFotos.find(f => f.id == idBusca);
         if(foto) abrirZoom(foto.url, foto.key);
-        else alert("Foto não encontrada!");
+        else alert("ID não encontrado!");
     }
 
-    // Verifica novas fotos a cada 5 segundos
     setInterval(atualizar, 5000);
     atualizar();
 </script>
