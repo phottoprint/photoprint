@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>WEBCAM - Terminal Totem v2.5</title>
+    <title>WEBCAM - Terminal Totem v2.9</title>
     <style>
         :root { --neon: #39ff14; --dark: #0a0a0a; --danger: #ff3131; }
         body { 
@@ -22,7 +22,6 @@
         }
         #img-review { max-width: 80%; max-height: 60%; border: 5px solid var(--neon); border-radius: 10px; box-shadow: 0 0 30px var(--neon); }
 
-        /* Botão Sair na tela de Preview Final */
         .btn-exit-preview {
             position: absolute; top: 30px; right: 30px;
             background: rgba(0,0,0,0.7); border: 2px solid var(--danger);
@@ -43,7 +42,6 @@
 
         .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; }
 
-        /* 1 - ANIMAÇÃO DO BOTÃO VAMOS COMEÇAR */
         .btn-start {
             width: 320px; height: 320px; border-radius: 50%;
             background: rgba(0,0,0,0.75); border: 12px solid var(--neon);
@@ -69,7 +67,6 @@
         #counter { font-size: 280px; font-weight: 900; text-shadow: 0 0 60px var(--neon); display: none; }
         #smile-msg { font-size: 80px; font-weight: 900; color: var(--neon); display: none; text-align: center; line-height: 1.1; text-transform: uppercase; }
 
-        /* Tela de preview rápido entre fotos */
         #mid-review-container {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 120;
             display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -96,11 +93,6 @@
             font-size: 60px; font-weight: 900; color: var(--danger);
             text-shadow: 0 0 30px rgba(255, 49, 49, 0.6);
             letter-spacing: 2px; text-align: center;
-            animation: pulse 1.5s infinite alternate;
-        }
-        @keyframes pulse {
-            from { transform: scale(0.98); opacity: 0.6; }
-            to { transform: scale(1.02); opacity: 1; }
         }
     </style>
 </head>
@@ -140,7 +132,6 @@
 
     <div id="final-preview-container" class="screen">
         <button class="btn-exit-preview" onclick="location.reload()">X</button>
-
         <h2 style="color:var(--neon)">FICOU ÓTIMA!</h2>
         <img id="img-review" src="">
         <p>Quantas cópias deseja imprimir?</p>
@@ -217,50 +208,43 @@
             } catch (err) { alert("Câmera não permitida."); location.reload(); }
         }
 
-        // 2 - GERENCIAMENTO DAS SEQUÊNCIAS COM AS MENSAGENS PERSONALIZADAS E REVIEW DE 3 SEGUNDOS
         async function startSequence() {
             const isTirinha = config.formato.includes("STRIP") || config.formato.includes("TIRINHA");
             
             if (isTirinha) {
-                // Configurações de chamada para as 3 fotos da Tirinha
                 const rotinas = [
-                    { tempo: 8, msgAviso: "PREPARE-SE! 🚀", msgFim: "FOTO 1 DE 3" },
-                    { tempo: 4, msgAviso: "MUDE A POSE! 😜", msgFim: "FOTO 2 DE 3" },
-                    { tempo: 4, msgAviso: "CAPRICHA NA ÚLTIMA! 🔥", msgFim: "FOTO 3 DE 3" }
+                    { tempo: 8, msgAviso: "PREPARE-SE! 🚀", msgFim: "FOTO 1 DE 3", tAviso: 3000 },
+                    { tempo: 4, msgAviso: "MUDE A POSE! 😜", msgFim: "FOTO 2 DE 3", tAviso: 1500 },
+                    { tempo: 4, msgAviso: "CAPRICHA NA ÚLTIMA! 🔥", msgFim: "FOTO 3 DE 3", tAviso: 1500 }
                 ];
 
                 for (let i = 0; i < 3; i++) {
-                    await runCountdown(rotinas[i].tempo, rotinas[i].msgAviso, rotinas[i].msgFim);
+                    await runCountdown(rotinas[i].tempo, rotinas[i].msgAviso, rotinas[i].msgFim, rotinas[i].tAviso);
                     let snapData = takeSnap();
                     fotosCapturadas.push(snapData);
-                    
-                    // Mostra a foto recém batida por 3 segundos na tela
                     await showMidReview(snapData, `FOTO ${i+1} DE 3 SALVA!`);
                 }
             } else {
-                // Modo Tradicional (Apenas 1 foto)
-                await runCountdown(8, "PREPARE-SE! 🚀", "SORRIA! 📸");
+                await runCountdown(8, "PREPARE-SE! 🚀", "SORRIA! 📸", 3000);
                 let snapData = takeSnap();
                 fotosCapturadas.push(snapData);
-                await showMidReview(snapData, "CAPTURADO com sucesso!");
+                await showMidReview(snapData, "CAPTURADO!");
             }
 
             processFinalImage();
         }
 
-        function runCountdown(segundos, msgInicial, subtexto) {
+        function runCountdown(segundos, msgInicial, subtexto, tempoDeAviso) {
             return new Promise(async (resolve) => {
                 const counterEl = document.getElementById('counter');
                 const smileEl = document.getElementById('smile-msg');
                 
-                // Exibe mensagem informativa rápida de preparação antes do relógio rodar
                 smileEl.innerHTML = `${msgInicial}`;
                 smileEl.style.display = "block";
                 document.getElementById('screen-capture').style.display = "flex";
-                await new Promise(r => setTimeout(r, 1500)); 
+                await new Promise(r => setTimeout(r, tempoDeAviso)); 
                 smileEl.style.display = "none";
 
-                // Inicia contagem regressiva numérica
                 for(let i = segundos; i > 0; i--) {
                     counterEl.innerText = i;
                     counterEl.style.display = "block";
@@ -294,7 +278,6 @@
             return canvas.toDataURL('image/jpeg', 0.9);
         }
 
-        // Função que sustenta a foto na tela por 3 segundos
         function showMidReview(photoData, titleText) {
             return new Promise((resolve) => {
                 document.getElementById('screen-capture').style.display = "none";
@@ -305,22 +288,35 @@
                 setTimeout(() => {
                     document.getElementById('mid-review-container').style.display = "none";
                     resolve();
-                }, 3000); // Exatamente os 3 segundos pedidos
+                }, 3000);
             });
         }
 
-        function processFinalImage() {
+        // NOVO MOTOR SEQUENCIAL SÍNCRONO CONTRA IMAGENS FANTASMAS (PRETAS)
+        async function processFinalImage() {
             document.getElementById('loader').style.display = "flex";
             
             const finalCanvas = document.getElementById('c-final');
             const ctx = finalCanvas.getContext('2d');
-            const imgFrame = new Image();
+            
+            try {
+                // Carrega e valida a moldura PNG
+                const responseMoldura = await fetch((config.molduraUrl || "") + "?t=" + Date.now());
+                const blobMoldura = await responseMoldura.blob();
+                const localFrameURL = URL.createObjectURL(blobMoldura);
 
-            imgFrame.crossOrigin = "anonymous";
-            imgFrame.onload = () => {
-                finalCanvas.width = imgFrame.width; 
-                finalCanvas.height = imgFrame.height;
+                const imgFrame = new Image();
+                imgFrame.src = localFrameURL;
 
+                await new Promise((resolve, reject) => {
+                    imgFrame.onload = resolve;
+                    imgFrame.onerror = reject;
+                });
+
+                finalCanvas.width = imgFrame.width || 1200; 
+                finalCanvas.height = imgFrame.height || 1800;
+
+                // Fundo limpo
                 ctx.fillStyle = "white"; 
                 ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
@@ -328,11 +324,19 @@
 
                 if (isTirinha && fotosCapturadas.length >= 3) {
                     const slots = [{y:0.030, h:0.254}, {y:0.296, h:0.254}, {y:0.559, h:0.254}];
-                    let count = 0;
+                    
+                    // Renderização estrita um por um garantindo o evento onload
+                    for (let i = 0; i < 3; i++) {
+                        const photoData = fotosCapturadas[i];
+                        
+                        const imgPhoto = await new Promise((res) => {
+                            const img = new Image();
+                            img.onload = () => res(img);
+                            img.onerror = () => res(null);
+                            img.src = photoData;
+                        });
 
-                    fotosCapturadas.forEach((photoData, i) => {
-                        const imgPhoto = new Image();
-                        imgPhoto.onload = () => {
+                        if (imgPhoto) {
                             const s = slots[i];
                             const dx = finalCanvas.width * 0.06;
                             const dw = finalCanvas.width * 0.88;
@@ -353,35 +357,43 @@
                                 imgPhoto.height * r
                             );
                             ctx.restore();
+                        }
+                    }
 
-                            count++;
-                            if (count === 3) {
-                                ctx.drawImage(imgFrame, 0, 0, finalCanvas.width, finalCanvas.height);
-                                concluirReview(finalCanvas);
-                            }
+                } else if (fotosCapturadas.length > 0) {
+                    // Modo Tradicional 1 Foto
+                    await new Promise((res) => {
+                        const imgPhoto = new Image();
+                        imgPhoto.onload = () => {
+                            const r = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
+                            const x = (finalCanvas.width - imgPhoto.width * r) / 2;
+                            const y = (finalCanvas.height - imgPhoto.height * r) / 2;
+                            ctx.drawImage(imgPhoto, x, y, imgPhoto.width * r, imgPhoto.height * r);
+                            res();
                         };
-                        imgPhoto.src = photoData;
+                        imgPhoto.onerror = () => res();
+                        imgPhoto.src = fotosCapturadas[0];
                     });
-
-                } else {
-                    const imgPhoto = new Image();
-                    imgPhoto.onload = () => {
-                        const r = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
-                        const x = (finalCanvas.width - imgPhoto.width * r) / 2;
-                        const y = (finalCanvas.height - imgPhoto.height * r) / 2;
-                        
-                        ctx.drawImage(imgPhoto, x, y, imgPhoto.width * r, imgPhoto.height * r);
-                        ctx.drawImage(imgFrame, 0, 0, finalCanvas.width, finalCanvas.height);
-                        concluirReview(finalCanvas);
-                    };
-                    imgPhoto.src = fotosCapturadas[0];
                 }
-            };
-            imgFrame.src = config.molduraUrl + "?t=" + Date.now();
+
+                // Desenha a moldura por cima das fotos perfeitamente renderizadas
+                ctx.drawImage(imgFrame, 0, 0, finalCanvas.width, finalCanvas.height);
+                
+                URL.revokeObjectURL(localFrameURL);
+                concluirReview(finalCanvas);
+
+            } catch (error) {
+                console.error("Falha ao montar imagem final:", error);
+                concluirReview(finalCanvas);
+            }
         }
 
         function concluirReview(canvas) {
-            document.getElementById('img-review').src = canvas.toDataURL('image/jpeg', 0.9);
+            try {
+                document.getElementById('img-review').src = canvas.toDataURL('image/jpeg', 0.9);
+            } catch(e) {
+                console.error("Erro no preview src:", e);
+            }
             document.getElementById('loader').style.display = "none";
             document.getElementById('final-preview-container').style.display = "flex";
             canvas.toBlob(b => { finalBlob = b; }, 'image/jpeg', 0.9);
