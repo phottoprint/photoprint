@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - GALLERY v4.2</title>
+    <title>PHOTO PRINT - GALLERY v4.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -131,8 +131,21 @@
             const resStatus = await fetch(`${API}/status?t=${Date.now()}`);
             const config = await resStatus.json();
             
-            eventoAtual = config.evento || "Geral";
+            const novoEvento = config.evento || "Geral";
             formatoAtual = config.formato ? config.formato.toUpperCase().trim() : "10X15V";
+            
+            // SEGURANÇA MUDANÇA DE EVENTO: Se o nome do evento mudou no painel admin
+            if (eventoAtual !== "" && eventoAtual !== novoEvento) {
+                console.log(`Detectada mudança de evento de "${eventoAtual}" para "${novoEvento}". Reiniciando estados.`);
+                eventoAtual = novoEvento;
+                todasFotos = [];
+                chavesLocais.clear();
+                printQueue = []; // Zera fila pendente antiga se houver
+                primeiraCarga = true; // Força bloqueio de impressão para ler as fotos existentes do novo evento
+                document.getElementById('grid-fotos').innerHTML = ""; // Limpa visual da tela imediatamente
+            } else {
+                eventoAtual = novoEvento;
+            }
             
             document.getElementById('nome-evento').innerText = eventoAtual;
             document.getElementById('tipo-formato').innerText = traduzirFormato(config.formato, config.orientacao);
@@ -180,7 +193,7 @@
                     chavesLocais.add(f.key);
                     houveMudancaNoGrid = true;
                     
-                    // SÓ ENTRA NA FILA SE NÃO FOR A PRIMEIRA CARGA DA PÁGINA
+                    // Só envia para a fila física de impressão se a página não estiver em carga inicial (ou em transição)
                     if (primeiraCarga === false) {
                         for (let i = 0; i < copiasDoCard; i++) {
                             addToPrintQueue(urlCompleta);
@@ -193,10 +206,9 @@
                 }
             }
             
-            // Força a flag a virar false apenas após processar com sucesso toda a primeira carga de fotos antigas
             primeiraCarga = false;
             
-        } catch(e) { console.error("Erro:", e); }
+        } catch(e) { console.error("Erro na atualização da galeria:", e); }
     }
 
     function render() {
@@ -259,7 +271,7 @@
         }
     }
 
-    function executarBusca() {
+    function ejecutarBusca() {
         const idBusca = document.getElementById('input-busca').value;
         const foto = todasFotos.find(f => f.id == idBusca);
         if(foto) abrirZoom(foto.url, foto.key);
