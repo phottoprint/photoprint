@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PHOTO PRINT - GALLERY v4.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root {
@@ -103,6 +103,7 @@
     let todasFotos = [];
     let chavesLocais = new Set();
     let eventoAtual = "";
+    let formatoAtual = "";
     let printQueue = [];
     let isPrinting = false;
     let primeiraCarga = true; 
@@ -131,6 +132,8 @@
             const config = await resStatus.json();
             
             eventoAtual = config.evento || "Geral";
+            formatoAtual = config.formato ? config.formato.toUpperCase().trim() : "10X15V";
+            
             document.getElementById('nome-evento').innerText = eventoAtual;
             document.getElementById('tipo-formato').innerText = traduzirFormato(config.formato, config.orientacao);
 
@@ -141,10 +144,30 @@
             const novasFotos = fotosJpg.filter(f => !chavesLocais.has(f.key));
 
             if (novasFotos.length > 0) {
+                // Descobre se o layout ativo na TV/Painel é estritamente Horizontal
+                const layoutEhHorizontal = formatoAtual.includes("10X15H") || config.orientacao === "horizontal";
+
                 for (let f of novasFotos) {
+                    const keyLower = f.key.toLowerCase();
+                    
+                    // LÓGICA DE FILTRO: Determina a orientação inerente do arquivo de imagem
+                    let fotoEhHorizontal = false;
+                    if (keyLower.includes('_h.jpg')) {
+                        fotoEhHorizontal = true;
+                    } else if (keyLower.includes('_v.jpg')) {
+                        fotoEhHorizontal = false;
+                    } else {
+                        // Fallback de compatibilidade para arquivos antigos sem sufixo explicito
+                        fotoEhHorizontal = layoutEhHorizontal;
+                    }
+
+                    // Se a orientação do arquivo conflitar com a orientação ativa do painel, bloqueia a mistura
+                    if (layoutEhHorizontal !== fotoEhHorizontal) {
+                        continue; 
+                    }
+
                     const urlCompleta = `${API}/photo/${encodeURIComponent(f.key)}`;
                     
-                    // Descobre a quantidade de cópias lendo o nome do arquivo (_2c_ ou _1c_)
                     let copiasDoCard = 1;
                     if (f.key.includes("_2c_")) {
                         copiasDoCard = 2;
@@ -159,7 +182,6 @@
                     
                     chavesLocais.add(f.key);
                     
-                    // Se não for o carregamento inicial, envia para a fila de impressão baseado nas cópias informadas
                     if (!primeiraCarga) {
                         for (let i = 0; i < copiasDoCard; i++) {
                             addToPrintQueue(urlCompleta);
@@ -210,7 +232,6 @@
 
     async function excluirFoto(key) {
         if(confirm("Excluir foto?")) {
-            // Corrigido para a sua rota unificada de delete passada via parâmetro do Worker
             await fetch(`${API}/photo?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
             location.reload();
         }
@@ -228,13 +249,12 @@
 
     async function limparTudo() {
         if(confirm("Apagar tudo?") && prompt("Senha:") === "123") {
-            // Corrigido para mandar a flag mapeada na sua API ("all")
             await fetch(`${API}/photo?key=all`, { method: 'DELETE' });
             location.reload();
         }
     }
 
-    function ejecutarBusca() {
+    function executarBusca() {
         const idBusca = document.getElementById('input-busca').value;
         const foto = todasFotos.find(f => f.id == idBusca);
         if(foto) abrirZoom(foto.url, foto.key);
