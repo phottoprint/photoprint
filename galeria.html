@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - GALLERY v4.3</title>
+    <title>PHOTO PRINT - GALLERY v4.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -134,15 +134,14 @@
             const novoEvento = config.evento || "Geral";
             formatoAtual = config.formato ? config.formato.toUpperCase().trim() : "10X15V";
             
-            // SEGURANÇA MUDANÇA DE EVENTO: Se o nome do evento mudou no painel admin
             if (eventoAtual !== "" && eventoAtual !== novoEvento) {
                 console.log(`Detectada mudança de evento de "${eventoAtual}" para "${novoEvento}". Reiniciando estados.`);
                 eventoAtual = novoEvento;
                 todasFotos = [];
                 chavesLocais.clear();
-                printQueue = []; // Zera fila pendente antiga se houver
-                primeiraCarga = true; // Força bloqueio de impressão para ler as fotos existentes do novo evento
-                document.getElementById('grid-fotos').innerHTML = ""; // Limpa visual da tela imediatamente
+                printQueue = []; 
+                primeiraCarga = true; 
+                document.getElementById('grid-fotos').innerHTML = ""; 
             } else {
                 eventoAtual = novoEvento;
             }
@@ -178,8 +177,11 @@
 
                     const urlCompleta = `${API}/photo/${encodeURIComponent(f.key)}`;
                     
+                    // NOVA LOGICA: Verificação de Cópias (Lê tags _2c_ e _3c_)
                     let copiasDoCard = 1;
-                    if (f.key.includes("_2c_")) {
+                    if (f.key.includes("_3c_")) {
+                        copiasDoCard = 3;
+                    } else if (f.key.includes("_2c_")) {
                         copiasDoCard = 2;
                     }
 
@@ -193,7 +195,6 @@
                     chavesLocais.add(f.key);
                     houveMudancaNoGrid = true;
                     
-                    // Só envia para a fila física de impressão se a página não estiver em carga inicial (ou em transição)
                     if (primeiraCarga === false) {
                         for (let i = 0; i < copiasDoCard; i++) {
                             addToPrintQueue(urlCompleta);
