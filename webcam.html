@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>WEBCAM - Terminal Totem v3.0</title>
+    <title>WEBCAM - PHOTO PRINT v3.1</title>
     <style>
         :root { --neon: #39ff14; --dark: #0a0a0a; --danger: #ff3131; }
         body { 
@@ -108,7 +108,7 @@
     <video id="cam-preview" autoplay playsinline></video>
 
     <div class="system-info">
-        <div class="sys-title">WEBCAM</div>
+        <div class="sys-title">PHOTO PRINT</div>
         <div class="sys-sub">Colecionando Momentos</div>
         <div id="event-display" class="event-label">CARREGANDO...</div>
     </div>
@@ -292,7 +292,6 @@
             });
         }
 
-        // MOTOR DE RENDERIZAÇÃO SEGURO V3.1 (VIA FETCH BLOB SEGURO E OBRIGATÓRIO)
         async function processFinalImage() {
             document.getElementById('loader').style.display = "flex";
             
@@ -307,7 +306,6 @@
             }
             
             try {
-                // Força o download da moldura via Fetch para resolver o CORS diretamente pelo Worker
                 const responseMoldura = await fetch(config.molduraUrl + "?t=" + Date.now());
                 if (!responseMoldura.ok) throw new Error("Falha na resposta HTTP ao buscar a moldura.");
                 
@@ -317,7 +315,6 @@
                 const imgFrame = new Image();
                 imgFrame.src = localFrameURL;
 
-                // Garante que o motor do navegador decodificou a imagem antes de mexer nas dimensões
                 await new Promise((resolve, reject) => {
                     imgFrame.onload = resolve;
                     imgFrame.onerror = reject;
@@ -326,7 +323,6 @@
                 finalCanvas.width = imgFrame.width; 
                 finalCanvas.height = imgFrame.height;
 
-                // Fundo limpo do tamanho exato da moldura carregada
                 ctx.fillStyle = "white"; 
                 ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
@@ -335,7 +331,6 @@
                 if (isTirinha && fotosCapturadas.length >= 3) {
                     const slots = [{y:0.030, h:0.254}, {y:0.296, h:0.254}, {y:0.559, h:0.254}];
                     
-                    // Renderização estrita síncrona um por um
                     for (let i = 0; i < 3; i++) {
                         const photoData = fotosCapturadas[i];
                         
@@ -371,7 +366,6 @@
                     }
 
                 } else if (fotosCapturadas.length > 0) {
-                    // Modo Tradicional 1 Foto
                     await new Promise((res) => {
                         const imgPhoto = new Image();
                         imgPhoto.onload = () => {
@@ -386,10 +380,8 @@
                     });
                 }
 
-                // Desenha a moldura por cima das fotos perfeitamente renderizadas
                 ctx.drawImage(imgFrame, 0, 0, finalCanvas.width, finalCanvas.height);
                 
-                // Limpa o link temporário da memória do navegador
                 URL.revokeObjectURL(localFrameURL);
                 concluirReview(finalCanvas);
 
