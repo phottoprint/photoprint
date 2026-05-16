@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>WEBCAM - Terminal Totem v2.2</title>
+    <title>WEBCAM - Terminal Totem v2.3</title>
     <style>
         :root { --neon: #39ff14; --dark: #0a0a0a; --danger: #ff3131; }
         body { 
@@ -44,7 +44,7 @@
         .btn-start:active { transform: scale(0.95); background: var(--neon); color: #000; }
 
         #counter { font-size: 280px; font-weight: 900; text-shadow: 0 0 60px var(--neon); display: none; }
-        #smile-msg { font-size: 100px; font-weight: 900; color: var(--neon); display: none; }
+        #smile-msg { font-size: 80px; font-weight: 900; color: var(--neon); display: none; text-align: center; line-height: 1.1; }
 
         .print-options { display: flex; gap: 30px; margin-top: 30px; pointer-events: auto; }
         .btn-print {
@@ -58,7 +58,6 @@
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 200; }
         #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* TELA DE MANUTENÇÃO / BLOQUEIO */
         #screen-maintenance {
             position: fixed; inset: 0; background: #000000; z-index: 9999;
             display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -127,8 +126,9 @@
 
     <script>
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-        let config = { evento: "", molduraUrl: "" };
+        let config = { evento: "", formato: "10X15", molduraUrl: "" };
         let finalBlob = null;
+        let fotosCapturadas = []; // Array para guardar as fotos no modo tirinha
         const video = document.getElementById('cam-preview');
 
         async function sync() {
@@ -136,16 +136,15 @@
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
                 const d = await r.json();
                 
-                // 1 e 2: Verifica se o painel está OFFLINE ou se não há evento ativo válido
                 if (d.status === "OFFLINE" || !d.evento || d.evento.trim() === "" || d.evento.toUpperCase() === "GERAL") {
                     showMaintenance();
                     return;
                 }
 
-                // Se passou pelas travas, esconde a tela de manutenção e segue o fluxo
                 document.getElementById('screen-maintenance').style.display = "none";
                 
                 config.evento = d.evento;
+                config.formato = d.formato ? d.formato.toUpperCase() : "10X15";
                 document.getElementById('event-display').innerText = config.evento;
 
                 const r2 = await fetch(`${API}/list-photos?evento=${encodeURIComponent(config.evento)}`);
@@ -154,13 +153,12 @@
                 if(frame) config.molduraUrl = `${API}/photo/${encodeURIComponent(frame.key)}`;
             } catch(e) { 
                 console.error("Erro sync API");
-                showMaintenance(); // Se a API cair ou falhar a requisição, também bloqueia por segurança
+                showMaintenance();
             }
         }
 
         function showMaintenance() {
             document.getElementById('screen-maintenance').style.display = "flex";
-            // Força a parada da webcam caso o sistema seja desativado no meio de uma sessão
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(t => t.stop());
                 video.style.display = "none";
@@ -170,30 +168,64 @@
         async function initSession() {
             document.getElementById('screen-start').style.display = "none";
             document.getElementById('loader').style.display = "flex";
+            fotosCapturadas = []; // limpa fotos antigas
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1920, height: 1080 } });
                 video.srcObject = stream;
                 video.style.display = "block";
                 setTimeout(() => {
                     document.getElementById('loader').style.display = "none";
-                    startCountdown();
+                    startSequence();
                 }, 1000);
             } catch (err) { alert("Câmera não permitida."); location.reload(); }
         }
 
-        async function startCountdown() {
-            const counterEl = document.getElementById('counter');
-            document.getElementById('screen-capture').style.display = "flex";
-            
-            for(let i=8; i>0; i--) {
-                counterEl.innerText = i;
-                counterEl.style.display = "block";
-                await new Promise(r => setTimeout(r, 1000));
+        // Gerencia a sequência de capturas (1 foto para tradicional ou 3 fotos para Tirinha)
+        async function startSequence() {
+            const isTirinha = config.formato.includes("STRIP") || config.formato.includes("TIRINHA");
+            const totalFotos = isTirinha ? 3 : 1;
+
+            for (let i = 0; i < totalFotos; i++) {
+                // Primeira foto: 8s | Seguintes: 4s
+                let tempo = (i === 0) ? 8 : 4; 
+                await runCountdown(tempo, isTirinha ? `FOTO ${i + 1} de 3` : "");
+                
+                // Tira o snapshot da foto atual e guarda
+                let snapData = takeSnap();
+                fotosCapturadas.push(snapData);
+                
+                // Pequena pausa entre cliques se houver próxima foto
+                if (i < totalFotos - 1) {
+                    await new Promise(r => setTimeout(r, 1200));
+                }
             }
 
-            counterEl.style.display = "none";
-            document.getElementById('smile-msg').style.display = "block";
-            setTimeout(takeSnap, 1000);
+            // Encerrada a sequência, processa o canvas final
+            processFinalImage();
+        }
+
+        function runCountdown(segundos, subtexto) {
+            return new Promise(async (resolve) => {
+                const counterEl = document.getElementById('counter');
+                const smileEl = document.getElementById('smile-msg');
+                document.getElementById('screen-capture').style.display = "flex";
+                smileEl.style.display = "none";
+
+                for(let i = segundos; i > 0; i--) {
+                    counterEl.innerText = i;
+                    counterEl.style.display = "block";
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+
+                counterEl.style.display = "none";
+                smileEl.innerHTML = subtexto ? `SORRIA!<br><span style="font-size:35px">${subtexto}</span>` : `SORRIA! 📸`;
+                smileEl.style.display = "block";
+                
+                setTimeout(() => {
+                    smileEl.style.display = "none";
+                    resolve();
+                }, 1000);
+            });
         }
 
         function takeSnap() {
@@ -204,36 +236,84 @@
             const canvas = document.getElementById('c-snap');
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+            
+            ctx.translate(canvas.width, 0); 
+            ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0);
-            processFinalImage(canvas.toDataURL('image/jpeg', 0.95));
+            
+            return canvas.toDataURL('image/jpeg', 0.95);
         }
 
-        function processFinalImage(photoData) {
+        function processFinalImage() {
             document.getElementById('screen-capture').style.display = "none";
             document.getElementById('loader').style.display = "flex";
+            
             const finalCanvas = document.getElementById('c-final');
             const ctx = finalCanvas.getContext('2d');
-            const imgPhoto = new Image(); const imgFrame = new Image();
+            const imgFrame = new Image();
 
             imgFrame.crossOrigin = "anonymous";
             imgFrame.onload = () => {
-                finalCanvas.width = imgFrame.width; finalCanvas.height = imgFrame.height;
-                imgPhoto.onload = () => {
-                    const ratio = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
-                    const x = (finalCanvas.width - imgPhoto.width * ratio) / 2;
-                    const y = (finalCanvas.height - imgPhoto.height * ratio) / 2;
-                    ctx.drawImage(imgPhoto, x, y, imgPhoto.width * ratio, imgPhoto.height * ratio);
-                    ctx.drawImage(imgFrame, 0, 0);
-                    
-                    document.getElementById('img-review').src = finalCanvas.toDataURL('image/jpeg', 0.9);
-                    document.getElementById('loader').style.display = "none";
-                    document.getElementById('final-preview-container').style.display = "flex";
-                    finalCanvas.toBlob(b => { finalBlob = b; }, 'image/jpeg', 0.9);
-                };
-                imgPhoto.src = photoData;
+                finalCanvas.width = imgFrame.width; 
+                finalCanvas.height = imgFrame.height;
+
+                const isTirinha = config.formato.includes("STRIP") || config.formato.includes("TIRINHA");
+
+                if (isTirinha && fotosCapturadas.length >= 3) {
+                    // MODO TIRINHA: Divide a altura da moldura em 3 partes verticais iguais
+                    let stripHeight = finalCanvas.height / 3;
+                    let carregadas = 0;
+
+                    fotosCapturadas.forEach((photoData, index) => {
+                        const imgPhoto = new Image();
+                        imgPhoto.onload = () => {
+                            let targetY = index * stripHeight;
+                            
+                            // Ajuste proporcional (Cover) para cada slot da tirinha
+                            const ratio = Math.max(finalCanvas.width / imgPhoto.width, stripHeight / imgPhoto.height);
+                            const x = (finalCanvas.width - imgPhoto.width * ratio) / 2;
+                            const y = targetY + (stripHeight - imgPhoto.height * ratio) / 2;
+
+                            // Desenha a foto recortando/preenchendo a área delimitada
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.rect(0, targetY, finalCanvas.width, stripHeight);
+                            ctx.clip();
+                            ctx.drawImage(imgPhoto, x, y, imgPhoto.width * ratio, imgPhoto.height * ratio);
+                            ctx.restore();
+
+                            carregadas++;
+                            // Quando as 3 fotos terminarem de ser desenhadas, aplica a moldura por cima
+                            if (carregadas === 3) {
+                                ctx.drawImage(imgFrame, 0, 0);
+                                concluirReview(finalCanvas);
+                            }
+                        };
+                        imgPhoto.src = photoData;
+                    });
+
+                } else {
+                    // MODO TRADICIONAL: Uma foto única centralizada preenchendo a tela
+                    const imgPhoto = new Image();
+                    imgPhoto.onload = () => {
+                        const ratio = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
+                        const x = (finalCanvas.width - imgPhoto.width * ratio) / 2;
+                        const y = (finalCanvas.height - imgPhoto.height * ratio) / 2;
+                        ctx.drawImage(imgPhoto, x, y, imgPhoto.width * ratio, imgPhoto.height * ratio);
+                        ctx.drawImage(imgFrame, 0, 0);
+                        concluirReview(finalCanvas);
+                    };
+                    imgPhoto.src = fotosCapturadas[0];
+                }
             };
             imgFrame.src = config.molduraUrl + "?t=" + Date.now();
+        }
+
+        function concluirReview(canvas) {
+            document.getElementById('img-review').src = canvas.toDataURL('image/jpeg', 0.9);
+            document.getElementById('loader').style.display = "none";
+            document.getElementById('final-preview-container').style.display = "flex";
+            canvas.toBlob(b => { finalBlob = b; }, 'image/jpeg', 0.9);
         }
 
         async function finishPrint(qtd) {
@@ -258,7 +338,6 @@
             setTimeout(() => { location.reload(); }, 5000);
         }
 
-        // Fica checando o status a cada 5 segundos para derrubar ou liberar o totem em tempo real
         setInterval(sync, 5000);
         sync();
     </script>
