@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>WEBCAM - Terminal Totem v2.4</title>
+    <title>WEBCAM - Terminal Totem v2.5</title>
     <style>
         :root { --neon: #39ff14; --dark: #0a0a0a; --danger: #ff3131; }
         body { 
@@ -22,6 +22,17 @@
         }
         #img-review { max-width: 80%; max-height: 60%; border: 5px solid var(--neon); border-radius: 10px; box-shadow: 0 0 30px var(--neon); }
 
+        /* Botão Sair na tela de Preview Final */
+        .btn-exit-preview {
+            position: absolute; top: 30px; right: 30px;
+            background: rgba(0,0,0,0.7); border: 2px solid var(--danger);
+            color: var(--danger); font-size: 24px; font-weight: bold;
+            width: 60px; height: 60px; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; z-index: 200; box-shadow: 0 0 15px rgba(255,49,49,0.4);
+        }
+        .btn-exit-preview:hover { background: var(--danger); color: white; box-shadow: 0 0 25px var(--danger); }
+
         .system-info { 
             position: absolute; top: 30px; left: 30px; text-align: left; 
             border-left: 4px solid var(--neon); padding-left: 15px; z-index: 100;
@@ -32,19 +43,38 @@
 
         .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; }
 
+        /* 1 - ANIMAÇÃO DO BOTÃO VAMOS COMEÇAR */
         .btn-start {
             width: 320px; height: 320px; border-radius: 50%;
-            background: rgba(0,0,0,0.6); border: 10px solid var(--neon);
+            background: rgba(0,0,0,0.75); border: 12px solid var(--neon);
             color: white; cursor: pointer; display: flex; flex-direction: column;
             align-items: center; justify-content: center; text-align: center;
-            box-shadow: 0 0 50px var(--neon); transition: 0.3s; pointer-events: auto;
+            transition: 0.3s; pointer-events: auto;
+            animation: pulseBtn 2s infinite ease-in-out;
         }
-        .btn-start b { font-size: 30px; color: var(--neon); }
-        .btn-start span { font-size: 18px; margin-top: 10px; }
-        .btn-start:active { transform: scale(0.95); background: var(--neon); color: #000; }
+        .btn-start b { font-size: 30px; color: var(--neon); animation: blinkText 1.5s infinite alternate; }
+        .btn-start span { font-size: 18px; margin-top: 15px; opacity: 0.8; letter-spacing: 1px; }
+        .btn-start:active { transform: scale(0.9) !important; background: var(--neon); color: #000; }
+
+        @keyframes pulseBtn {
+            0% { transform: scale(1); box-shadow: 0 0 30px rgba(57, 255, 20, 0.4); }
+            50% { transform: scale(1.06); box-shadow: 0 0 60px rgba(57, 255, 20, 0.8), inset 0 0 20px rgba(57, 255, 20, 0.3); }
+            100% { transform: scale(1); box-shadow: 0 0 30px rgba(57, 255, 20, 0.4); }
+        }
+        @keyframes blinkText {
+            from { opacity: 0.6; text-shadow: 0 0 5px var(--neon); }
+            to { opacity: 1; text-shadow: 0 0 20px var(--neon); }
+        }
 
         #counter { font-size: 280px; font-weight: 900; text-shadow: 0 0 60px var(--neon); display: none; }
-        #smile-msg { font-size: 80px; font-weight: 900; color: var(--neon); display: none; text-align: center; line-height: 1.1; }
+        #smile-msg { font-size: 80px; font-weight: 900; color: var(--neon); display: none; text-align: center; line-height: 1.1; text-transform: uppercase; }
+
+        /* Tela de preview rápido entre fotos */
+        #mid-review-container {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 120;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #img-mid-review { max-width: 75%; max-height: 75%; border: 4px solid #fff; border-radius: 8px; }
 
         .print-options { display: flex; gap: 30px; margin-top: 30px; pointer-events: auto; }
         .btn-print {
@@ -103,7 +133,14 @@
         <div id="smile-msg">SORRIA! 📸</div>
     </div>
 
+    <div id="mid-review-container">
+        <h2 id="mid-review-title" style="color:var(--neon); margin-bottom:15px; font-size:40px;">OLHA ELE(A)!</h2>
+        <img id="img-mid-review" src="">
+    </div>
+
     <div id="final-preview-container" class="screen">
+        <button class="btn-exit-preview" onclick="location.reload()">X</button>
+
         <h2 style="color:var(--neon)">FICOU ÓTIMA!</h2>
         <img id="img-review" src="">
         <p>Quantas cópias deseja imprimir?</p>
@@ -180,32 +217,50 @@
             } catch (err) { alert("Câmera não permitida."); location.reload(); }
         }
 
+        // 2 - GERENCIAMENTO DAS SEQUÊNCIAS COM AS MENSAGENS PERSONALIZADAS E REVIEW DE 3 SEGUNDOS
         async function startSequence() {
             const isTirinha = config.formato.includes("STRIP") || config.formato.includes("TIRINHA");
-            const totalFotos = isTirinha ? 3 : 1;
+            
+            if (isTirinha) {
+                // Configurações de chamada para as 3 fotos da Tirinha
+                const rotinas = [
+                    { tempo: 8, msgAviso: "PREPARE-SE! 🚀", msgFim: "FOTO 1 DE 3" },
+                    { tempo: 4, msgAviso: "MUDE A POSE! 😜", msgFim: "FOTO 2 DE 3" },
+                    { tempo: 4, msgAviso: "CAPRICHA NA ÚLTIMA! 🔥", msgFim: "FOTO 3 DE 3" }
+                ];
 
-            for (let i = 0; i < totalFotos; i++) {
-                let tempo = (i === 0) ? 8 : 4; 
-                await runCountdown(tempo, isTirinha ? `PREPARE-SE PARA A FOTO ${i + 1}` : "");
-                
+                for (let i = 0; i < 3; i++) {
+                    await runCountdown(rotinas[i].tempo, rotinas[i].msgAviso, rotinas[i].msgFim);
+                    let snapData = takeSnap();
+                    fotosCapturadas.push(snapData);
+                    
+                    // Mostra a foto recém batida por 3 segundos na tela
+                    await showMidReview(snapData, `FOTO ${i+1} DE 3 SALVA!`);
+                }
+            } else {
+                // Modo Tradicional (Apenas 1 foto)
+                await runCountdown(8, "PREPARE-SE! 🚀", "SORRIA! 📸");
                 let snapData = takeSnap();
                 fotosCapturadas.push(snapData);
-                
-                if (i < totalFotos - 1) {
-                    await new Promise(r => setTimeout(r, 1200));
-                }
+                await showMidReview(snapData, "CAPTURADO com sucesso!");
             }
 
             processFinalImage();
         }
 
-        function runCountdown(segundos, subtexto) {
+        function runCountdown(segundos, msgInicial, subtexto) {
             return new Promise(async (resolve) => {
                 const counterEl = document.getElementById('counter');
                 const smileEl = document.getElementById('smile-msg');
+                
+                // Exibe mensagem informativa rápida de preparação antes do relógio rodar
+                smileEl.innerHTML = `${msgInicial}`;
+                smileEl.style.display = "block";
                 document.getElementById('screen-capture').style.display = "flex";
+                await new Promise(r => setTimeout(r, 1500)); 
                 smileEl.style.display = "none";
 
+                // Inicia contagem regressiva numérica
                 for(let i = segundos; i > 0; i--) {
                     counterEl.innerText = i;
                     counterEl.style.display = "block";
@@ -213,7 +268,7 @@
                 }
 
                 counterEl.style.display = "none";
-                smileEl.innerHTML = subtexto ? `SORRIA!<br><span style="font-size:35px; color: #fff;">${subtexto}</span>` : `SORRIA! 📸`;
+                smileEl.innerHTML = `SORRIA!<br><span style="font-size:35px; color: #fff;">${subtexto}</span>`;
                 smileEl.style.display = "block";
                 
                 setTimeout(() => {
@@ -239,8 +294,22 @@
             return canvas.toDataURL('image/jpeg', 0.9);
         }
 
+        // Função que sustenta a foto na tela por 3 segundos
+        function showMidReview(photoData, titleText) {
+            return new Promise((resolve) => {
+                document.getElementById('screen-capture').style.display = "none";
+                document.getElementById('mid-review-title').innerText = titleText;
+                document.getElementById('img-mid-review').src = photoData;
+                document.getElementById('mid-review-container').style.display = "flex";
+                
+                setTimeout(() => {
+                    document.getElementById('mid-review-container').style.display = "none";
+                    resolve();
+                }, 3000); // Exatamente os 3 segundos pedidos
+            });
+        }
+
         function processFinalImage() {
-            document.getElementById('screen-capture').style.display = "none";
             document.getElementById('loader').style.display = "flex";
             
             const finalCanvas = document.getElementById('c-final');
@@ -249,18 +318,15 @@
 
             imgFrame.crossOrigin = "anonymous";
             imgFrame.onload = () => {
-                // Seta o tamanho nativo baseado na imagem da moldura vinda da API
                 finalCanvas.width = imgFrame.width; 
                 finalCanvas.height = imgFrame.height;
 
-                // Força um fundo branco de base
                 ctx.fillStyle = "white"; 
                 ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
                 const isTirinha = config.formato.includes("STRIP") || config.formato.includes("TIRINHA");
 
                 if (isTirinha && fotosCapturadas.length >= 3) {
-                    // Mapeamento idêntico à sua engenharia Mobile v1.8
                     const slots = [{y:0.030, h:0.254}, {y:0.296, h:0.254}, {y:0.559, h:0.254}];
                     let count = 0;
 
@@ -268,7 +334,6 @@
                         const imgPhoto = new Image();
                         imgPhoto.onload = () => {
                             const s = slots[i];
-                            // Calcula as posições dinâmicas baseadas nos percentuais reais da moldura carregada
                             const dx = finalCanvas.width * 0.06;
                             const dw = finalCanvas.width * 0.88;
                             const dy = finalCanvas.height * s.y;
@@ -277,9 +342,8 @@
                             ctx.save(); 
                             ctx.beginPath(); 
                             ctx.rect(dx, dy, dw, dh); 
-                            ctx.clip(); // Limita o desenho para não vazar do quadrado do slot
+                            ctx.clip();
 
-                            // Cálculo do Cover proporcional perfeito por slot
                             const r = Math.max(dw / imgPhoto.width, dh / imgPhoto.height);
                             ctx.drawImage(
                                 imgPhoto, 
@@ -291,7 +355,6 @@
                             ctx.restore();
 
                             count++;
-                            // Se desenhou as 3 fotos na tirinha, joga a moldura PNG por cima por último
                             if (count === 3) {
                                 ctx.drawImage(imgFrame, 0, 0, finalCanvas.width, finalCanvas.height);
                                 concluirReview(finalCanvas);
@@ -301,7 +364,6 @@
                     });
 
                 } else {
-                    // MODO TRADICIONAL (1 Foto Centralizada cheia)
                     const imgPhoto = new Image();
                     imgPhoto.onload = () => {
                         const r = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
