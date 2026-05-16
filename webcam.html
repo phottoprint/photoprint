@@ -2,9 +2,9 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>WEBCAM - Terminal Totem v2.1</title>
+    <title>WEBCAM - Terminal Totem v2.2</title>
     <style>
-        :root { --neon: #39ff14; --dark: #0a0a0a; }
+        :root { --neon: #39ff14; --dark: #0a0a0a; --danger: #ff3131; }
         body { 
             margin: 0; background: var(--dark); color: white; 
             font-family: 'Segoe UI', sans-serif; overflow: hidden; 
@@ -57,12 +57,32 @@
         .farewell-text { font-size: 50px; text-align: center; color: var(--neon); font-weight: 900; }
         #flash { position: fixed; inset: 0; background: white; display: none; z-index: 200; }
         #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* TELA DE MANUTENÇÃO / BLOQUEIO */
+        #screen-maintenance {
+            position: fixed; inset: 0; background: #000000; z-index: 9999;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .maintenance-msg {
+            font-size: 60px; font-weight: 900; color: var(--danger);
+            text-shadow: 0 0 30px rgba(255, 49, 49, 0.6);
+            letter-spacing: 2px; text-align: center;
+            animation: pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(0.98); opacity: 0.6; }
+            to { transform: scale(1.02); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
     <div id="flash"></div>
     <div id="loader"><h2 id="load-msg" style="color:var(--neon)">PROCESSANDO...</h2></div>
+
+    <div id="screen-maintenance">
+        <div class="maintenance-msg">SISTEMA EM MANUTENÇÃO</div>
+    </div>
 
     <video id="cam-preview" autoplay playsinline></video>
 
@@ -115,14 +135,36 @@
             try {
                 const r = await fetch(`${API}/status?t=${Date.now()}`);
                 const d = await r.json();
-                config.evento = d.evento || "Geral";
+                
+                // 1 e 2: Verifica se o painel está OFFLINE ou se não há evento ativo válido
+                if (d.status === "OFFLINE" || !d.evento || d.evento.trim() === "" || d.evento.toUpperCase() === "GERAL") {
+                    showMaintenance();
+                    return;
+                }
+
+                // Se passou pelas travas, esconde a tela de manutenção e segue o fluxo
+                document.getElementById('screen-maintenance').style.display = "none";
+                
+                config.evento = d.evento;
                 document.getElementById('event-display').innerText = config.evento;
 
                 const r2 = await fetch(`${API}/list-photos?evento=${encodeURIComponent(config.evento)}`);
                 const files = await r2.json();
                 const frame = files.find(f => f.key.toLowerCase().endsWith('.png'));
                 if(frame) config.molduraUrl = `${API}/photo/${encodeURIComponent(frame.key)}`;
-            } catch(e) { console.error("Erro sync"); }
+            } catch(e) { 
+                console.error("Erro sync API");
+                showMaintenance(); // Se a API cair ou falhar a requisição, também bloqueia por segurança
+            }
+        }
+
+        function showMaintenance() {
+            document.getElementById('screen-maintenance').style.display = "flex";
+            // Força a parada da webcam caso o sistema seja desativado no meio de uma sessão
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(t => t.stop());
+                video.style.display = "none";
+            }
         }
 
         async function initSession() {
@@ -143,7 +185,6 @@
             const counterEl = document.getElementById('counter');
             document.getElementById('screen-capture').style.display = "flex";
             
-            // Alterado para 8 segundos conforme pedido
             for(let i=8; i>0; i--) {
                 counterEl.innerText = i;
                 counterEl.style.display = "block";
@@ -202,7 +243,7 @@
             const fd = new FormData();
             fd.append('file', finalBlob, 'webcam.jpg');
             fd.append('evento', config.evento);
-            fd.append('copias', qtd); // <--- INFORMAÇÃO DA QUANTIDADE AQUI
+            fd.append('copias', qtd);
 
             try {
                 await fetch(`${API}/upload`, { method: 'POST', body: fd });
@@ -217,6 +258,8 @@
             setTimeout(() => { location.reload(); }, 5000);
         }
 
+        // Fica checando o status a cada 5 segundos para derrubar ou liberar o totem em tempo real
+        setInterval(sync, 5000);
         sync();
     </script>
 </body>
