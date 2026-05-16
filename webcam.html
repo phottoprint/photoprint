@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>WEBCAM - Terminal Totem v2.3</title>
+    <title>WEBCAM - Terminal Totem v2.4</title>
     <style>
         :root { --neon: #39ff14; --dark: #0a0a0a; --danger: #ff3131; }
         body { 
@@ -126,9 +126,9 @@
 
     <script>
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
-        let config = { evento: "", formato: "10X15", molduraUrl: "" };
+        let config = { evento: "", formato: "10X15V", molduraUrl: "" };
         let finalBlob = null;
-        let fotosCapturadas = []; // Array para guardar as fotos no modo tirinha
+        let fotosCapturadas = [];
         const video = document.getElementById('cam-preview');
 
         async function sync() {
@@ -144,7 +144,7 @@
                 document.getElementById('screen-maintenance').style.display = "none";
                 
                 config.evento = d.evento;
-                config.formato = d.formato ? d.formato.toUpperCase() : "10X15";
+                config.formato = d.formato ? d.formato.toUpperCase() : "10X15V";
                 document.getElementById('event-display').innerText = config.evento;
 
                 const r2 = await fetch(`${API}/list-photos?evento=${encodeURIComponent(config.evento)}`);
@@ -168,7 +168,7 @@
         async function initSession() {
             document.getElementById('screen-start').style.display = "none";
             document.getElementById('loader').style.display = "flex";
-            fotosCapturadas = []; // limpa fotos antigas
+            fotosCapturadas = [];
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1920, height: 1080 } });
                 video.srcObject = stream;
@@ -180,27 +180,22 @@
             } catch (err) { alert("Câmera não permitida."); location.reload(); }
         }
 
-        // Gerencia a sequência de capturas (1 foto para tradicional ou 3 fotos para Tirinha)
         async function startSequence() {
             const isTirinha = config.formato.includes("STRIP") || config.formato.includes("TIRINHA");
             const totalFotos = isTirinha ? 3 : 1;
 
             for (let i = 0; i < totalFotos; i++) {
-                // Primeira foto: 8s | Seguintes: 4s
                 let tempo = (i === 0) ? 8 : 4; 
-                await runCountdown(tempo, isTirinha ? `FOTO ${i + 1} de 3` : "");
+                await runCountdown(tempo, isTirinha ? `PREPARE-SE PARA A FOTO ${i + 1}` : "");
                 
-                // Tira o snapshot da foto atual e guarda
                 let snapData = takeSnap();
                 fotosCapturadas.push(snapData);
                 
-                // Pequena pausa entre cliques se houver próxima foto
                 if (i < totalFotos - 1) {
                     await new Promise(r => setTimeout(r, 1200));
                 }
             }
 
-            // Encerrada a sequência, processa o canvas final
             processFinalImage();
         }
 
@@ -218,7 +213,7 @@
                 }
 
                 counterEl.style.display = "none";
-                smileEl.innerHTML = subtexto ? `SORRIA!<br><span style="font-size:35px">${subtexto}</span>` : `SORRIA! 📸`;
+                smileEl.innerHTML = subtexto ? `SORRIA!<br><span style="font-size:35px; color: #fff;">${subtexto}</span>` : `SORRIA! 📸`;
                 smileEl.style.display = "block";
                 
                 setTimeout(() => {
@@ -241,7 +236,7 @@
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0);
             
-            return canvas.toDataURL('image/jpeg', 0.95);
+            return canvas.toDataURL('image/jpeg', 0.9);
         }
 
         function processFinalImage() {
@@ -254,38 +249,51 @@
 
             imgFrame.crossOrigin = "anonymous";
             imgFrame.onload = () => {
+                // Seta o tamanho nativo baseado na imagem da moldura vinda da API
                 finalCanvas.width = imgFrame.width; 
                 finalCanvas.height = imgFrame.height;
+
+                // Força um fundo branco de base
+                ctx.fillStyle = "white"; 
+                ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
                 const isTirinha = config.formato.includes("STRIP") || config.formato.includes("TIRINHA");
 
                 if (isTirinha && fotosCapturadas.length >= 3) {
-                    // MODO TIRINHA: Divide a altura da moldura em 3 partes verticais iguais
-                    let stripHeight = finalCanvas.height / 3;
-                    let carregadas = 0;
+                    // Mapeamento idêntico à sua engenharia Mobile v1.8
+                    const slots = [{y:0.030, h:0.254}, {y:0.296, h:0.254}, {y:0.559, h:0.254}];
+                    let count = 0;
 
-                    fotosCapturadas.forEach((photoData, index) => {
+                    fotosCapturadas.forEach((photoData, i) => {
                         const imgPhoto = new Image();
                         imgPhoto.onload = () => {
-                            let targetY = index * stripHeight;
-                            
-                            // Ajuste proporcional (Cover) para cada slot da tirinha
-                            const ratio = Math.max(finalCanvas.width / imgPhoto.width, stripHeight / imgPhoto.height);
-                            const x = (finalCanvas.width - imgPhoto.width * ratio) / 2;
-                            const y = targetY + (stripHeight - imgPhoto.height * ratio) / 2;
+                            const s = slots[i];
+                            // Calcula as posições dinâmicas baseadas nos percentuais reais da moldura carregada
+                            const dx = finalCanvas.width * 0.06;
+                            const dw = finalCanvas.width * 0.88;
+                            const dy = finalCanvas.height * s.y;
+                            const dh = finalCanvas.height * s.h;
 
-                            // Desenha a foto recortando/preenchendo a área delimitada
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.rect(0, targetY, finalCanvas.width, stripHeight);
-                            ctx.clip();
-                            ctx.drawImage(imgPhoto, x, y, imgPhoto.width * ratio, imgPhoto.height * ratio);
+                            ctx.save(); 
+                            ctx.beginPath(); 
+                            ctx.rect(dx, dy, dw, dh); 
+                            ctx.clip(); // Limita o desenho para não vazar do quadrado do slot
+
+                            // Cálculo do Cover proporcional perfeito por slot
+                            const r = Math.max(dw / imgPhoto.width, dh / imgPhoto.height);
+                            ctx.drawImage(
+                                imgPhoto, 
+                                dx + (dw - imgPhoto.width * r) / 2, 
+                                dy + (dh - imgPhoto.height * r) / 2, 
+                                imgPhoto.width * r, 
+                                imgPhoto.height * r
+                            );
                             ctx.restore();
 
-                            carregadas++;
-                            // Quando as 3 fotos terminarem de ser desenhadas, aplica a moldura por cima
-                            if (carregadas === 3) {
-                                ctx.drawImage(imgFrame, 0, 0);
+                            count++;
+                            // Se desenhou as 3 fotos na tirinha, joga a moldura PNG por cima por último
+                            if (count === 3) {
+                                ctx.drawImage(imgFrame, 0, 0, finalCanvas.width, finalCanvas.height);
                                 concluirReview(finalCanvas);
                             }
                         };
@@ -293,14 +301,15 @@
                     });
 
                 } else {
-                    // MODO TRADICIONAL: Uma foto única centralizada preenchendo a tela
+                    // MODO TRADICIONAL (1 Foto Centralizada cheia)
                     const imgPhoto = new Image();
                     imgPhoto.onload = () => {
-                        const ratio = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
-                        const x = (finalCanvas.width - imgPhoto.width * ratio) / 2;
-                        const y = (finalCanvas.height - imgPhoto.height * ratio) / 2;
-                        ctx.drawImage(imgPhoto, x, y, imgPhoto.width * ratio, imgPhoto.height * ratio);
-                        ctx.drawImage(imgFrame, 0, 0);
+                        const r = Math.max(finalCanvas.width / imgPhoto.width, finalCanvas.height / imgPhoto.height);
+                        const x = (finalCanvas.width - imgPhoto.width * r) / 2;
+                        const y = (finalCanvas.height - imgPhoto.height * r) / 2;
+                        
+                        ctx.drawImage(imgPhoto, x, y, imgPhoto.width * r, imgPhoto.height * r);
+                        ctx.drawImage(imgFrame, 0, 0, finalCanvas.width, finalCanvas.height);
                         concluirReview(finalCanvas);
                     };
                     imgPhoto.src = fotosCapturadas[0];
