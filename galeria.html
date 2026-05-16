@@ -45,6 +45,7 @@
         .card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: var(--neon-shadow); }
         .card img { width: 100%; display: block; height: auto; }
         .card .badge { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #000; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 2; }
+        .card .print-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); border: 1px solid var(--accent); color: var(--accent); padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 2; }
 
         .sidebar { position: fixed; right: -350px; top: 0; width: 300px; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 5000; transition: 0.5s; padding: 120px 25px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
@@ -106,19 +107,16 @@
     let isPrinting = false;
     let primeiraCarga = true; 
 
-    // Lógica v4.2 Integrada
     function traduzirFormato(formato, orientacaoManual) {
         if (!formato) return "--";
         const f = formato.toUpperCase().trim();
         
-        // 1. Prioridade Máxima: Se o nome do formato já traz a letra H ou V
         if (f.includes("10X15H")) return "10x15 Horizontal";
         if (f.includes("10X15V")) return "10x15 Vertical";
         
-        // 2. Se for 10x15 genérico, checa se existe uma orientação manual vinda do painel
         if (f.includes("10X15")) {
             if (orientacaoManual === "horizontal") return "10x15 Horizontal";
-            return "10x15 Vertical"; // Padrão de segurança
+            return "10x15 Vertical";
         }
 
         if (f.includes("STRIP") || f.includes("TIRINHA")) return "Tirinha";
@@ -134,8 +132,6 @@
             
             eventoAtual = config.evento || "Geral";
             document.getElementById('nome-evento').innerText = eventoAtual;
-            
-            // Passamos o formato e a possível orientação configurada no painel
             document.getElementById('tipo-formato').innerText = traduzirFormato(config.formato, config.orientacao);
 
             const resF = await fetch(`${API}/list-photos?evento=${encodeURIComponent(eventoAtual)}&t=${Date.now()}`);
@@ -147,9 +143,28 @@
             if (novasFotos.length > 0) {
                 for (let f of novasFotos) {
                     const urlCompleta = `${API}/photo/${encodeURIComponent(f.key)}`;
-                    todasFotos.push({ id: todasFotos.length + 1, url: urlCompleta, key: f.key });
+                    
+                    // Descobre a quantidade de cópias lendo o nome do arquivo (_2c_ ou _1c_)
+                    let copiasDoCard = 1;
+                    if (f.key.includes("_2c_")) {
+                        copiasDoCard = 2;
+                    }
+
+                    todasFotos.push({ 
+                        id: todasFotos.length + 1, 
+                        url: urlCompleta, 
+                        key: f.key,
+                        copias: copiasDoCard 
+                    });
+                    
                     chavesLocais.add(f.key);
-                    if (!primeiraCarga) addToPrintQueue(urlCompleta);
+                    
+                    // Se não for o carregamento inicial, envia para a fila de impressão baseado nas cópias informadas
+                    if (!primeiraCarga) {
+                        for (let i = 0; i < copiasDoCard; i++) {
+                            addToPrintQueue(urlCompleta);
+                        }
+                    }
                 }
                 render();
             }
@@ -162,6 +177,7 @@
         grid.innerHTML = todasFotos.slice().reverse().map(f => `
             <div class="card" onclick="abrirZoom('${f.url}', '${f.key}')">
                 <span class="badge">#${f.id}</span>
+                ${f.copias > 1 ? `<span class="print-badge"><i class="fa-solid fa-print"></i> ${f.copias}x</span>` : ''}
                 <img src="${f.url}">
             </div>
         `).join('');
@@ -194,7 +210,8 @@
 
     async function excluirFoto(key) {
         if(confirm("Excluir foto?")) {
-            await fetch(`${API}/delete-photo?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+            // Corrigido para a sua rota unificada de delete passada via parâmetro do Worker
+            await fetch(`${API}/photo?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
             location.reload();
         }
     }
@@ -211,12 +228,13 @@
 
     async function limparTudo() {
         if(confirm("Apagar tudo?") && prompt("Senha:") === "123") {
-            await fetch(`${API}/delete-all`, { method: 'DELETE' });
+            // Corrigido para mandar a flag mapeada na sua API ("all")
+            await fetch(`${API}/photo?key=all`, { method: 'DELETE' });
             location.reload();
         }
     }
 
-    function executarBusca() {
+    function ejecutarBusca() {
         const idBusca = document.getElementById('input-busca').value;
         const foto = todasFotos.find(f => f.id == idBusca);
         if(foto) abrirZoom(foto.url, foto.key);
