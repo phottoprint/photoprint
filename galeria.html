@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHOTO PRINT - GALLERY v4.5</title>
+    <title>PHOTO PRINT - GALLERY v4.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -48,8 +48,8 @@
         .card .badge { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #000; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 2; }
         .card .print-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); border: 1px solid var(--accent); color: var(--accent); padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 2; }
         
-        /* Novo estilo para o Badge indicador do Livro de Assinaturas */
-        .card .guestbook-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.85); border: 1px solid var(--info-blue); color: var(--info-blue); padding: 3px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; z-index: 2; text-transform: uppercase; display: flex; align-items: center; gap: 4px; }
+        /* Badge do Livro reposicionado para não cortar layout */
+        .card .guestbook-badge { position: absolute; bottom: 8px; left: 8px; right: 8px; background: rgba(0,0,0,0.85); border: 1px solid var(--info-blue); color: var(--info-blue); padding: 4px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 2; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
         .sidebar { position: fixed; right: -350px; top: 0; width: 300px; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 5000; transition: 0.5s; padding: 120px 25px; border-left: var(--glass-border); }
         .sidebar.active { right: 0; }
@@ -181,26 +181,19 @@
 
                     const urlCompleta = `${API}/photo/${encodeURIComponent(f.key)}`;
                     
-                    // Verificação avançada de Cópias e identificação do Livro de Assinaturas
+                    // Lógica precisa para capturar o sufixo de cópias
                     let copiasDoCard = 1;
-                    let temLivro = false;
-
-                    if (f.key.includes("_3c_")) {
+                    if (keyLower.includes("_3c_")) {
                         copiasDoCard = 3;
-                        temLivro = true; // Se tem 3 cópias no celular atual, veio da regra de 2 convidados + 1 livro
-                    } else if (f.key.includes("_2c_")) {
+                    } else if (keyLower.includes("_2c_")) {
                         copiasDoCard = 2;
-                        // Pode ser 2 cópias normais ou 1 convidado + 1 livro. Como o celular envia _2c_ em ambos,
-                        // avaliamos que houve intenção de impressão dupla de qualquer forma.
-                        // Caso queira diferenciar de forma rígida no futuro, o celular pode enviar tags como _livro_
                     }
 
                     todasFotos.push({ 
                         id: todasFotos.length + 1, 
                         url: urlCompleta, 
                         key: f.key,
-                        copias: copiasDoCard,
-                        livro: temLivro
+                        copias: copiasDoCard
                     });
                     
                     chavesLocais.add(f.key);
@@ -225,16 +218,19 @@
 
     function render() {
         const grid = document.getElementById('grid-fotos');
-        grid.innerHTML = todasFotos.slice().reverse().map(f => `
-            <div class="card" onclick="abrirZoom('${f.url}', '${f.key}')">
-                <span class="badge">#${f.id}</span>
-                ${f.copias > 1 ? `<span class="print-badge"><i class="fa-solid fa-print"></i> ${f.copias}x</span>` : ''}
-                
-                ${f.livro || f.key.includes("_3c_") ? `<span class="guestbook-badge"><i class="fa-solid fa-book-open"></i> + Livro</span>` : ''}
-                
-                <img src="${f.url}">
-            </div>
-        `).join('');
+        grid.innerHTML = todasFotos.slice().reverse().map(f => {
+            const ehLivro = f.key.toLowerCase().includes("_3c_");
+            return `
+                <div class="card" onclick="abrirZoom('${f.url}', '${f.key}')">
+                    <span class="badge">#${f.id}</span>
+                    ${f.copias > 1 ? `<span class="print-badge"><i class="fa-solid fa-print"></i> ${f.copias}x</span>` : ''}
+                    
+                    ${ehLivro ? `<span class="guestbook-badge"><i class="fa-solid fa-book-open"></i> Livro de Assinaturas</span>` : ''}
+                    
+                    <img src="${f.url}">
+                </div>
+            `;
+        }).join('');
     }
 
     function addToPrintQueue(src) {
