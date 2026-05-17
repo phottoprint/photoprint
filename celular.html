@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHOTO PRINT - MOBILE v1.9</title>
+    <title>PHOTO PRINT - MOBILE v2.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --neon: #39ff14; --error: #ff0000; }
@@ -105,7 +105,7 @@
     </div>
 
     <div class="header">
-        <h1 class="brand-title">Photo Print</h1>
+        <h1 class="brand-title">PHOTO PRINT</h1>
         <div class="subtitle">colecionando momentos</div>
         <div id="nome-evento-capa">...</div>
     </div>
@@ -123,7 +123,7 @@
         const API = "https://photoprint-api.maxprimefotovideo.workers.dev";
         let ev = "", formatStr = "", frame = "", pics = [], stream = null, facingMode = "user";
         let configAtual = null;
-        let quantidadeCopias = 1; // Variável global para gerenciar a quantidade escolhida
+        let quantidadeCopias = 1;
 
         const FORMATOS = {
             "TIRINHA": { w: 600, h: 1800, fotos: 3, key: "TIRINHA", exigeH: false },
@@ -166,15 +166,24 @@
         window.addEventListener("resize", checkOrientation);
 
         async function startStream() {
-            if (stream) stream.getTracks().forEach(t => t.stop());
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+            }
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                    video: { 
+                        facingMode: { ideal: facingMode }, 
+                        width: { ideal: 1920 }, 
+                        height: { ideal: 1080 } 
+                    } 
                 });
                 const v = document.getElementById('v');
                 v.srcObject = stream;
                 v.className = (facingMode === "user") ? "mirror" : "";
-            } catch (e) { alert("Câmera não disponível"); }
+            } catch (e) { 
+                console.error(e);
+                alert("Câmera não disponível ou permissão negada."); 
+            }
         }
 
         async function switchCam() {
@@ -273,7 +282,6 @@
             m.src = frame + "?t=" + Date.now();
         }
 
-        // Nova função para gerenciar os botões de seleção de cópias na interface
         function alterarCopias(qtd) {
             quantidadeCopias = qtd;
             document.getElementById('btn-opt-1').className = 'print-opt-btn' + (qtd === 1 ? ' active' : '');
@@ -281,7 +289,7 @@
         }
 
         function exibir(url) {
-            quantidadeCopias = 1; // Reseta para o padrão toda vez que abre a tela
+            quantidadeCopias = 1;
             
             document.getElementById('loader').innerHTML = `
                 <img src="${url}" style="max-height:50vh; border:2px solid var(--neon); box-shadow: 0 0 20px var(--neon);">
@@ -308,8 +316,6 @@
             document.getElementById('loader').innerHTML = `<div class="spin"></div><p style="color:var(--neon)">ENVIANDO PARA NUVEM...</p>`;
             document.getElementById('c-strip').toBlob(async b => {
                 const fd = new FormData();
-                
-                // Aplica a tag de controle se o usuário escolheu duas cópias
                 const nomeArquivo = quantidadeCopias === 2 ? 'foto_2c_.jpg' : 'foto.jpg';
                 
                 fd.append('file', b, nomeArquivo); 
